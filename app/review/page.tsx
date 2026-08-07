@@ -91,7 +91,7 @@ export default function ReviewPage() {
     const outcome = res.extra as
       | { intent: string; reply: string; rowHint: string | null; proposedValue: number | null }
       | undefined;
-    setChat((c) => [...c, { role: 'ai', text: outcome?.reply ?? res.message ?? '' }]);
+
     if (outcome?.intent === 'comment') {
       setMode('comment');
       if (outcome.proposedValue) setProposed(String(outcome.proposedValue));
@@ -103,6 +103,23 @@ export default function ReviewPage() {
     } else if (outcome?.intent === 'update') {
       setMode('update');
     }
+
+    const fallback = outcome?.reply ?? res.message ?? '';
+    let displayReply = fallback;
+    try {
+      const polishRes = await fetch('/api/llm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: question, fallback, mode: 'review_chat' }),
+      });
+      if (polishRes.ok) {
+        const data = (await polishRes.json()) as { text?: string };
+        if (data.text) displayReply = data.text;
+      }
+    } catch {
+      // deterministic fallback already set
+    }
+    setChat((c) => [...c, { role: 'ai', text: displayReply }]);
   };
 
   return (

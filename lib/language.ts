@@ -188,6 +188,36 @@ const REFINERY_WORDS: Record<string, string> = {
   rabigh: 'Refinery RABIGH',
 };
 
+function recipientsFromText(trimmed: string, stakeholders: Stakeholder[]): string[] {
+  const fromRefineries = Object.entries(REFINERY_WORDS)
+    .filter(([word]) => new RegExp(`\\b${word}`, 'i').test(trimmed))
+    .map(([, name]) => name);
+
+  const fromNames: string[] = [];
+  for (const s of stakeholders) {
+    if (s.kind === 'planner') continue;
+    if (fromRefineries.includes(s.name)) continue;
+    const escaped = s.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp(escaped, 'i').test(trimmed)) {
+      fromNames.push(s.name);
+      continue;
+    }
+    const words = s.name.toLowerCase().split(/\s+/);
+    if (words.length > 1 && words.every((w) => new RegExp(`\\b${w}\\b`, 'i').test(trimmed))) {
+      fromNames.push(s.name);
+    }
+  }
+
+  const mentionsAllRefineries = /\ball (the )?refineries\b|\bevery refinery\b|\ball four\b/i.test(trimmed);
+  if (fromRefineries.length || fromNames.length) {
+    return [...new Set([...fromRefineries, ...fromNames])];
+  }
+  if (mentionsAllRefineries) {
+    return stakeholders.filter((s) => s.kind === 'refinery').map((s) => s.name);
+  }
+  return [];
+}
+
 const TOPIC_WORDS: Array<[RegExp, string]> = [
   [/outage|turnaround|shutdown|maintenance/i, 'Updated outage schedule for the horizon'],
   [/min.?max|min\/max|minimum and maximum/i, 'Updated min/max tank levels per bulk plant'],
@@ -212,18 +242,7 @@ export function interpretChat(text: string, stakeholders: Stakeholder[]): ChatOu
     return { reply: 'Tell me what you need this cycle and who from, and I will draft it.', adHoc, question: null };
   }
 
-  const named = Object.entries(REFINERY_WORDS)
-    .filter(([word]) => new RegExp(`\\b${word}`, 'i').test(trimmed))
-    .map(([, name]) => name);
-
-  // "all the refineries" is a recipient; a bare "the refineries" is not specific enough
-  // to send an ad-hoc ask on, and guessing would put it in front of the wrong people.
-  const mentionsAllRefineries = /\ball (the )?refineries\b|\bevery refinery\b|\ball four\b/i.test(trimmed);
-  const recipients = named.length
-    ? [...new Set(named)]
-    : mentionsAllRefineries
-      ? stakeholders.filter((s) => s.kind === 'refinery').map((s) => s.name)
-      : [];
+  const recipients = recipientsFromText(trimmed, stakeholders);
 
   const topics = TOPIC_WORDS.filter(([re]) => re.test(trimmed)).map(([, item]) => item);
 

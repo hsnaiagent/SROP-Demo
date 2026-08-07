@@ -33,6 +33,7 @@ interface ActResult {
   message?: string;
   error?: string;
   extra?: unknown;
+  cycle?: CycleRecord | null;
 }
 
 interface CycleContextValue {
@@ -92,7 +93,7 @@ export function CycleProvider({ children }: { children: ReactNode }) {
         if ('cycle' in data) setCycle(data.cycle ?? null);
         if (data.reference) setReference(data.reference);
         if (data.message) setMessage(data.message);
-        return { ok: true, message: data.message, extra: data.extra };
+        return { ok: true, message: data.message, extra: data.extra, cycle: data.cycle ?? null };
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Action failed';
         setError(msg);

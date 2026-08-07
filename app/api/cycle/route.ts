@@ -194,6 +194,21 @@ function apply(
       return;
     }
 
+    case 'update_request_bodies': {
+      const updates = p.updates;
+      if (!Array.isArray(updates)) throw new Error('updates must be an array');
+      for (const raw of updates) {
+        const u = raw as { id?: unknown; body?: unknown };
+        const id = String(u.id ?? '');
+        const body = String(u.body ?? '');
+        if (!id || !body) continue;
+        const req = c.requests.find((r) => r.id === id);
+        if (!req) continue;
+        req.emailDraft = { ...req.emailDraft, body };
+      }
+      return;
+    }
+
     case 'send_requests': {
       const unreviewed = c.requests.filter((r) => !r.reviewed);
       if (unreviewed.length > 0) {
@@ -287,18 +302,7 @@ function apply(
       c.flags = [...kept, ...merged];
 
       // Any excluded series needs an explicit decision from Y before the gate opens.
-      const { excluded } = buildPlan(loadPlanInput());
-      for (const series of excluded) {
-        if (!c.excludedDecisions.some((d) => d.key === series.key)) {
-          c.excludedDecisions.push({
-            key: series.key,
-            decision: 'pending',
-            reason: null,
-            decidedBy: null,
-            decidedAt: null,
-          });
-        }
-      }
+      syncExcludedDecisions(c, buildPlan(loadPlanInput()).excluded);
 
       const clean = c.submissions.filter((s) => s.status === 'clean').map((s) => s.source);
       result.message = summarise(openFlags(c), clean);
@@ -472,15 +476,32 @@ function apply(
     }
 
     case 'decide_excluded': {
-      const decision = c.excludedDecisions.find((d) => d.key === p.key);
-      if (!decision) throw new Error('excluded series not found');
+      const key = String(p.key ?? '');
       const reason = String(p.reason ?? '').trim();
       if (!reason) throw new Error('a reason is required so stakeholders see a decision, not a gap');
+
+      ensureExcludedDecisions(c);
+      let decision = c.excludedDecisions.find((d) => d.key === key);
+      if (!decision) {
+        const draft = currentDraft(c);
+        const known =
+          draft?.excluded.some((s) => s.key === key) ||
+          buildPlan(resolvedPlanInput(c, loadPlanInput())).excluded.some((s) => s.key === key);
+        if (!known) throw new Error('excluded series not found');
+        decision = {
+          key,
+          decision: 'pending',
+          reason: null,
+          decidedBy: null,
+          decidedAt: null,
+        };
+        c.excludedDecisions.push(decision);
+      }
       decision.decision = 'exclusion_confirmed';
       decision.reason = reason;
       decision.decidedBy = actor;
       decision.decidedAt = now();
-      audit(c, actor, 'confirmed exclusion', String(p.key), reason);
+      audit(c, actor, 'confirmed exclusion', key, reason);
       return;
     }
 
@@ -532,6 +553,7 @@ function apply(
 
       for (const d of c.drafts) if (d.status !== 'finalized') d.status = 'superseded';
       c.drafts.push(draft);
+      syncExcludedDecisions(c, excluded);
       audit(c, 'LP model', `generated draft v${draft.version}`, draft.id,
         `${rows.length} rows · ${draft.shortfallRowCount} shortfalls · ${draft.bandBreachRowCount} band breaches`);
       result.message = `Draft v${draft.version} generated — ${rows.length} rows, ${draft.shortfallRowCount} with a shortfall.`;
@@ -854,6 +876,26 @@ function apply(
 }
 
 // --------------------------------------------------------------------- helpers
+
+function ensureExcludedDecisions(c: CycleRecord) {
+  if (!c.excludedDecisions) c.excludedDecisions = [];
+}
+
+/** Track every unplannable series so Y can confirm or add limits before Gate 1 opens. */
+function syncExcludedDecisions(c: CycleRecord, excluded: Array<{ key: string }>) {
+  ensureExcludedDecisions(c);
+  for (const series of excluded) {
+    if (!c.excludedDecisions.some((d) => d.key === series.key)) {
+      c.excludedDecisions.push({
+        key: series.key,
+        decision: 'pending',
+        reason: null,
+        decidedBy: null,
+        decidedAt: null,
+      });
+    }
+  }
+}
 
 function openFlagStatus(status: FlagStatus) {
   return status === 'open' || status === 'awaiting_response' || status === 'responded' || status === 'escalated';

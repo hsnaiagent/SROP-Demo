@@ -12,6 +12,8 @@
 
 import { useState } from 'react';
 
+import type { ChatMessage, Request } from '@/lib/types';
+
 import { useCycle } from '../providers';
 import {
   Badge,
@@ -32,10 +34,74 @@ const SUGGESTIONS = [
   'Ask the refineries about limits.',
 ];
 
+async function polishText(
+  message: string,
+  fallback: string,
+  mode: 'planner_chat' | 'stakeholder_email',
+  context?: string
+): Promise<{ text: string; source: 'llm' | 'fallback' }> {
+  try {
+    const res = await fetch('/api/llm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, fallback, mode, context }),
+    });
+    if (!res.ok) return { text: fallback, source: 'fallback' };
+    const data = (await res.json()) as { text?: string; source?: 'llm' | 'fallback' };
+    return {
+      text: data.text?.trim() || fallback,
+      source: data.source === 'llm' ? 'llm' : 'fallback',
+    };
+  } catch {
+    return { text: fallback, source: 'fallback' };
+  }
+}
+
+function formatChatHistory(chat: ChatMessage[]): string {
+  return chat
+    .slice(-14)
+    .map((m) => `${m.role === 'planner' ? 'Planner' : 'Orchestrator'}: ${m.text}`)
+    .join('\n');
+}
+
+function requestsChanged(
+  before: Array<{ id: string; items: string }>,
+  after: Request[]
+): boolean {
+  if (after.length !== before.length) return true;
+  return after.some((r) => {
+    const prev = before.find((b) => b.id === r.id);
+    return !prev || prev.items !== r.items.join('|');
+  });
+}
+
+async function polishDraftEmails(
+  userText: string,
+  chatHistory: string,
+  requests: Request[]
+): Promise<Array<{ id: string; body: string }>> {
+  const targets = requests.filter((r) => r.status === 'draft');
+  const results = await Promise.all(
+    targets.map(async (req) => {
+      const { text, source } = await polishText(
+        userText,
+        req.emailDraft.body,
+        'stakeholder_email',
+        `${chatHistory}\n\nRecipient: ${req.recipient}. Due: ${req.dueDate}. ` +
+          `Requested items: ${req.items.join('; ')}`
+      );
+      return { id: req.id, body: text, source };
+    })
+  );
+  return results.filter((r) => r.source === 'llm').map((r) => ({ id: r.id, body: r.body }));
+}
+
 export default function RequestsPage() {
   const { cycle, act, busy } = useCycle();
   const [text, setText] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [polishedReplies, setPolishedReplies] = useState<Record<string, string>>({});
+  const [polishingEmails, setPolishingEmails] = useState(false);
 
   if (!cycle) {
     return (
@@ -48,9 +114,44 @@ export default function RequestsPage() {
   const sent = cycle.requests.some((r) => r.status === 'sent');
   const unreviewed = cycle.requests.filter((r) => !r.reviewed).length;
 
-  const send = () => {
+  const send = async () => {
+    const userText = text;
+    const before = cycle.requests.map((r) => ({ id: r.id, items: r.items.join('|') }));
     setText('');
-    act('chat', { text });
+    const chatRes = await act('chat', { text: userText });
+    if (!chatRes.ok || !chatRes.cycle) return;
+
+    try {
+      const requests = chatRes.cycle.requests;
+      const chatHistory = formatChatHistory(chatRes.cycle.chat);
+      const last = chatRes.cycle.chat.at(-1);
+
+      if (last?.role === 'orchestrator') {
+        const { text: reply, source } = await polishText(
+          userText,
+          last.text,
+          'planner_chat',
+          chatHistory
+        );
+        if (source === 'llm' && reply !== last.text) {
+          setPolishedReplies((prev) => ({ ...prev, [last.id]: reply }));
+        }
+      }
+
+      if (requestsChanged(before, requests)) {
+        setPolishingEmails(true);
+        const updates = await polishDraftEmails(userText, chatHistory, requests);
+        if (updates.length > 0) {
+          await act('update_request_bodies', { updates });
+        }
+        const firstNew = requests.find((r) => r.origin === 'new');
+        if (firstNew) setExpanded(firstNew.id);
+      }
+    } catch {
+      // persisted cycle stays deterministic on failure
+    } finally {
+      setPolishingEmails(false);
+    }
   };
 
   return (
@@ -70,6 +171,12 @@ export default function RequestsPage() {
         )
       }
     >
+      {polishingEmails && (
+        <Banner tone="info" title="Polishing email drafts">
+          Rewriting the request emails for a more natural tone — this takes a few seconds.
+        </Banner>
+      )}
+
       {sent && (
         <Banner tone="good" title="Requests sent">
           All {cycle.requests.length} requests went out{' '}
@@ -113,7 +220,7 @@ export default function RequestsPage() {
                   <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
                     {msg.role === 'planner' ? 'You' : 'Orchestrator'}
                   </span>
-                  {msg.text}
+                  {polishedReplies[msg.id] ?? msg.text}
                 </div>
               ))}
             </div>
@@ -133,8 +240,8 @@ export default function RequestsPage() {
                   }}
                 />
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button tone="primary" size="sm" onClick={send} disabled={busy !== null || !text.trim()}>
-                    Send
+                  <Button tone="primary" size="sm" onClick={send} disabled={busy !== null || polishingEmails || !text.trim()}>
+                    {polishingEmails ? 'Polishing emails…' : busy === 'chat' ? 'Drafting…' : 'Send'}
                   </Button>
                   {SUGGESTIONS.map((s) => (
                     <button
