@@ -114,7 +114,14 @@ export function handleChat(cycle: CycleRecord, text: string) {
 
   // Rule 2: refuse to draft an ambiguous request. Ask, do not guess.
   if (outcome.question) {
-    return { reply: outcome.question, requests: null as Request[] | null, asked: true };
+    return {
+      reply: outcome.question,
+      requests: null as Request[] | null,
+      asked: true,
+      polishHint: null,
+      clearAdHoc: [] as string[],
+      emailTargets: [] as string[],
+    };
   }
 
   const existingAdHoc: Record<string, string[]> = {};
@@ -127,11 +134,21 @@ export function handleChat(cycle: CycleRecord, text: string) {
   }
 
   const merged: Record<string, string[]> = { ...existingAdHoc };
+  if (outcome.clearAdHoc) {
+    for (const recipient of outcome.clearAdHoc) delete merged[recipient];
+  }
   for (const [recipient, items] of Object.entries(outcome.adHoc)) {
     merged[recipient] = [...new Set([...(merged[recipient] ?? []), ...items])];
   }
 
-  return { reply: outcome.reply, requests: draftRequests(cycle, merged), asked: false };
+  return {
+    reply: outcome.reply,
+    requests: draftRequests(cycle, merged),
+    asked: false,
+    polishHint: outcome.polishHint ?? null,
+    clearAdHoc: outcome.clearAdHoc ?? [],
+    emailTargets: outcome.emailTargets ?? [],
+  };
 }
 
 export function submissionsForRequests(requests: Request[]): Submission[] {

@@ -178,6 +178,12 @@ export interface ChatOutcome {
   adHoc: Record<string, string[]>;
   /** Set when the ask is too vague to draft — the orchestrator asks instead of guessing. */
   question: string | null;
+  /** Recipients whose ad-hoc extras should be dropped (e.g. "remove the emergency for Yanbu"). */
+  clearAdHoc?: string[];
+  /** Recipients whose email wording should change without altering request items. */
+  emailTargets?: string[];
+  /** Passed to email polish only — does not change request items. */
+  polishHint?: string | null;
 }
 
 const REFINERY_WORDS: Record<string, string> = {
@@ -246,6 +252,22 @@ export function interpretChat(text: string, stakeholders: Stakeholder[]): ChatOu
 
   const topics = TOPIC_WORDS.filter(([re]) => re.test(trimmed)).map(([, item]) => item);
 
+  const isRemoval =
+    recipients.length > 0 &&
+    /\b(remove|drop|cancel|clear|withdraw|without)\b/i.test(trimmed);
+
+  if (isRemoval) {
+    return {
+      reply:
+        `Cleared ad-hoc extras for ${plantList(recipients)}. ` +
+        `The standard monthly pull is unchanged for all other recipients.`,
+      adHoc: {},
+      clearAdHoc: recipients,
+      question: null,
+      polishHint: trimmed,
+    };
+  }
+
   // A topic with no recipient is the one genuinely ambiguous case.
   if (topics.length > 0 && recipients.length === 0) {
     return {
@@ -257,8 +279,30 @@ export function interpretChat(text: string, stakeholders: Stakeholder[]): ChatOu
     };
   }
 
+  const isWordingOnly =
+    recipients.length > 0 &&
+    topics.length === 0 &&
+    /\b(email|emergency|urgent|tone|wording|formal|rewrite|reword|submit today|asap|immediately)\b/i.test(
+      trimmed
+    );
+
+  if (isWordingOnly) {
+    return {
+      reply:
+        `Will update the email wording for ${plantList(recipients)}. ` +
+        `The standard monthly pull is unchanged for everyone else.`,
+      adHoc: {},
+      emailTargets: recipients,
+      polishHint: trimmed,
+      question: null,
+    };
+  }
+
   const isStandardOnly = recipients.length === 0 && topics.length === 0;
   if (isStandardOnly) {
+    const polishHint = /\b(emergency|urgent|asap|today|same day|immediately)\b/i.test(trimmed)
+      ? trimmed
+      : null;
     return {
       reply:
         `Prepared the standard monthly pull: prices from Demand Planning, demand from ` +
@@ -266,6 +310,7 @@ export function interpretChat(text: string, stakeholders: Stakeholder[]): ChatOu
         `Review the cards on the right and send when you are happy.`,
       adHoc,
       question: null,
+      polishHint,
     };
   }
 

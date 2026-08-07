@@ -64,36 +64,82 @@ function formatChatHistory(chat: ChatMessage[]): string {
     .join('\n');
 }
 
-function requestsChanged(
+function requestItemsChanged(
   before: Array<{ id: string; items: string }>,
-  after: Request[]
+  req: Request
 ): boolean {
-  if (after.length !== before.length) return true;
-  return after.some((r) => {
-    const prev = before.find((b) => b.id === r.id);
-    return !prev || prev.items !== r.items.join('|');
-  });
+  const prev = before.find((b) => b.id === req.id);
+  return !prev || prev.items !== req.items.join('|');
+}
+
+interface ChatExtra {
+  asked?: boolean;
+  polishHint?: string | null;
+  clearAdHoc?: string[];
+  emailTargets?: string[];
+}
+
+function shouldPolishEmail(
+  req: Request,
+  before: Array<{ id: string; items: string }>,
+  extra: ChatExtra
+): boolean {
+  const changed = requestItemsChanged(before, req);
+  const clearAdHoc = new Set(extra.clearAdHoc ?? []);
+  const emailTargets = new Set(extra.emailTargets ?? []);
+  const globalTone =
+    Boolean(extra.polishHint) && emailTargets.size === 0 && clearAdHoc.size === 0;
+  return (
+    changed ||
+    clearAdHoc.has(req.recipient) ||
+    emailTargets.has(req.recipient) ||
+    globalTone
+  );
 }
 
 async function polishDraftEmails(
   userText: string,
   chatHistory: string,
-  requests: Request[]
+  requests: Request[],
+  before: Array<{ id: string; items: string }>,
+  previousBodies: Record<string, string>,
+  extra: ChatExtra
 ): Promise<Array<{ id: string; body: string }>> {
-  const targets = requests.filter((r) => r.status === 'draft');
-  const results = await Promise.all(
-    targets.map(async (req) => {
-      const { text, source } = await polishText(
-        userText,
-        req.emailDraft.body,
-        'stakeholder_email',
-        `${chatHistory}\n\nRecipient: ${req.recipient}. Due: ${req.dueDate}. ` +
-          `Requested items: ${req.items.join('; ')}`
-      );
-      return { id: req.id, body: text, source };
-    })
-  );
-  return results.filter((r) => r.source === 'llm').map((r) => ({ id: r.id, body: r.body }));
+  const clearAdHoc = new Set(extra.clearAdHoc ?? []);
+  const emailTargets = new Set(extra.emailTargets ?? []);
+  const updates: Array<{ id: string; body: string }> = [];
+
+  for (const req of requests.filter((r) => r.status === 'draft')) {
+    if (!shouldPolishEmail(req, before, extra)) continue;
+
+    const targeted = clearAdHoc.has(req.recipient) || emailTargets.has(req.recipient);
+    const previous = previousBodies[req.id];
+
+    const contextParts = [
+      chatHistory,
+      extra.polishHint ? `Latest planner instruction: ${extra.polishHint}` : '',
+      `Recipient: ${req.recipient}. Due: ${req.dueDate}.`,
+      `Requested items: ${req.items.join('; ')}`,
+      clearAdHoc.has(req.recipient)
+        ? 'The planner is removing a prior urgency or ad-hoc ask for this recipient. Write a standard professional request with no emergency tone.'
+        : targeted
+          ? 'Only this recipient\'s email wording should change; keep the same data asks as before.'
+          : '',
+      previous
+        ? `Previous email draft for this recipient (revise to match the full conversation):\n${previous}`
+        : '',
+    ].filter(Boolean);
+
+    const { text } = await polishText(
+      userText,
+      previous ?? req.emailDraft.body,
+      'stakeholder_email',
+      contextParts.join('\n\n')
+    );
+    updates.push({ id: req.id, body: text });
+  }
+
+  return updates;
 }
 
 export default function RequestsPage() {
@@ -101,6 +147,7 @@ export default function RequestsPage() {
   const [text, setText] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [polishedReplies, setPolishedReplies] = useState<Record<string, string>>({});
+  const [polishedEmails, setPolishedEmails] = useState<Record<string, string>>({});
   const [polishingEmails, setPolishingEmails] = useState(false);
 
   if (!cycle) {
@@ -117,9 +164,14 @@ export default function RequestsPage() {
   const send = async () => {
     const userText = text;
     const before = cycle.requests.map((r) => ({ id: r.id, items: r.items.join('|') }));
+    const previousBodies = Object.fromEntries(
+      cycle.requests.map((r) => [r.id, polishedEmails[r.id] ?? r.emailDraft.body])
+    );
     setText('');
     const chatRes = await act('chat', { text: userText });
     if (!chatRes.ok || !chatRes.cycle) return;
+
+    const extra = (chatRes.extra ?? {}) as ChatExtra;
 
     try {
       const requests = chatRes.cycle.requests;
@@ -138,12 +190,37 @@ export default function RequestsPage() {
         }
       }
 
-      if (requestsChanged(before, requests)) {
+      if (!extra.asked && requests.length > 0) {
         setPolishingEmails(true);
-        const updates = await polishDraftEmails(userText, chatHistory, requests);
+        const updates = await polishDraftEmails(
+          userText,
+          chatHistory,
+          requests,
+          before,
+          previousBodies,
+          extra
+        );
         if (updates.length > 0) {
           await act('update_request_bodies', { updates });
         }
+        setPolishedEmails((prev) => {
+          const next = { ...prev };
+          const clearAdHoc = new Set(extra.clearAdHoc ?? []);
+          const emailTargets = new Set(extra.emailTargets ?? []);
+          for (const r of requests) {
+            const untouched =
+              !requestItemsChanged(before, r) &&
+              !clearAdHoc.has(r.recipient) &&
+              !emailTargets.has(r.recipient);
+            if (untouched) {
+              // Keep the polished text from earlier turns — server bodies are templates.
+              const kept = prev[r.id] ?? previousBodies[r.id];
+              if (kept) next[r.id] = kept;
+            }
+          }
+          for (const u of updates) next[u.id] = u.body;
+          return next;
+        });
         const firstNew = requests.find((r) => r.origin === 'new');
         if (firstNew) setExpanded(firstNew.id);
       }
@@ -153,6 +230,8 @@ export default function RequestsPage() {
       setPolishingEmails(false);
     }
   };
+
+  const emailBody = (req: Request) => polishedEmails[req.id] ?? req.emailDraft.body;
 
   return (
     <Screen
@@ -359,7 +438,7 @@ export default function RequestsPage() {
                       <Field label="Body" hint="Drafted with the request already in it — you do not write this.">
                         <Textarea
                           rows={8}
-                          value={req.emailDraft.body}
+                          value={emailBody(req)}
                           readOnly={req.status === 'sent'}
                           onChange={(e) =>
                             act('update_request', {

@@ -158,14 +158,37 @@ function apply(
     // ------------------------------------------------------------ phase 1
     case 'chat': {
       const text = String(p.text ?? '');
+      const prior = new Map(
+        c.requests.map((r) => [r.id, { items: r.items.join('|'), body: r.emailDraft.body }])
+      );
       c.chat.push({ id: `msg-${c.chat.length}`, role: 'planner', text, at: now() });
       const outcome = handleChat(c, text);
       c.chat.push({ id: `msg-${c.chat.length}`, role: 'orchestrator', text: outcome.reply, at: now() });
       if (outcome.requests) {
-        c.requests = outcome.requests;
-        c.submissions = mergeSubmissions(c, submissionsForRequests(outcome.requests));
+        const clearSet = new Set(outcome.clearAdHoc ?? []);
+        const targetSet = new Set(outcome.emailTargets ?? []);
+        c.requests = outcome.requests.map((req) => {
+          const old = prior.get(req.id);
+          if (
+            old &&
+            old.items === req.items.join('|') &&
+            !clearSet.has(req.recipient) &&
+            !targetSet.has(req.recipient) &&
+            old.body.trim()
+          ) {
+            return { ...req, emailDraft: { ...req.emailDraft, body: old.body } };
+          }
+          return req;
+        });
+        c.submissions = mergeSubmissions(c, submissionsForRequests(c.requests));
       }
       audit(c, actor, outcome.asked ? 'orchestrator asked for clarification' : 'requests drafted from chat', 'requests', text);
+      result.extra = {
+        asked: outcome.asked,
+        polishHint: outcome.polishHint,
+        clearAdHoc: outcome.clearAdHoc,
+        emailTargets: outcome.emailTargets,
+      };
       return;
     }
 
