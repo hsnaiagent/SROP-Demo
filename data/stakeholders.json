@@ -1,0 +1,138 @@
+[
+  {
+    "id": "planner",
+    "name": "Y - SROP Planner",
+    "kind": "planner",
+    "email": "srop.planner@aramco.example",
+    "escalationContact": null,
+    "ownsPlants": [],
+    "ownsFields": [
+      "*"
+    ],
+    "submits": []
+  },
+  {
+    "id": "ospas",
+    "name": "OSPAS",
+    "kind": "department",
+    "email": "ospas.demand@aramco.example",
+    "escalationContact": "ospas.head@aramco.example",
+    "ownsPlants": [],
+    "ownsFields": [
+      "demand_kb"
+    ],
+    "submits": [
+      "demand"
+    ]
+  },
+  {
+    "id": "demand-planning",
+    "name": "Demand Planning",
+    "kind": "department",
+    "email": "demand.planning@aramco.example",
+    "escalationContact": "dp.head@aramco.example",
+    "ownsPlants": [],
+    "ownsFields": [
+      "price_usd"
+    ],
+    "submits": [
+      "prices"
+    ]
+  },
+  {
+    "id": "refinery-yanbu",
+    "name": "Refinery YANBU",
+    "kind": "refinery",
+    "refinery": "YANBU",
+    "email": "yanbu.planning@aramco.example",
+    "escalationContact": "yanbu.manager@aramco.example",
+    "ownsPlants": [
+      "BP-YANBU",
+      "BP-MADINAH"
+    ],
+    "ownsFields": [
+      "opening_inventory_kb",
+      "min_level",
+      "max_level",
+      "capacity",
+      "outage_days"
+    ],
+    "submits": [
+      "inventory"
+    ]
+  },
+  {
+    "id": "refinery-jazan",
+    "name": "Refinery JAZAN",
+    "kind": "refinery",
+    "refinery": "JAZAN",
+    "email": "jazan.planning@aramco.example",
+    "escalationContact": "jazan.manager@aramco.example",
+    "ownsPlants": [
+      "BP-JAZAN"
+    ],
+    "ownsFields": [
+      "opening_inventory_kb",
+      "min_level",
+      "max_level",
+      "capacity",
+      "outage_days"
+    ],
+    "submits": [
+      "inventory"
+    ]
+  },
+  {
+    "id": "refinery-riyadh",
+    "name": "Refinery RIYADH",
+    "kind": "refinery",
+    "refinery": "RIYADH",
+    "email": "riyadh.planning@aramco.example",
+    "escalationContact": "riyadh.manager@aramco.example",
+    "ownsPlants": [
+      "BP-RIYADH",
+      "BP-QASSIM"
+    ],
+    "ownsFields": [
+      "opening_inventory_kb",
+      "min_level",
+      "max_level",
+      "capacity",
+      "outage_days"
+    ],
+    "submits": [
+      "inventory"
+    ]
+  },
+  {
+    "id": "refinery-rabigh",
+    "name": "Refinery RABIGH",
+    "kind": "refinery",
+    "refinery": "RABIGH",
+    "email": "rabigh.planning@aramco.example",
+    "escalationContact": "rabigh.manager@aramco.example",
+    "ownsPlants": [
+      "BP-RABIGH"
+    ],
+    "ownsFields": [
+      "opening_inventory_kb",
+      "min_level",
+      "max_level",
+      "capacity",
+      "outage_days"
+    ],
+    "submits": [
+      "inventory"
+    ]
+  },
+  {
+    "id": "finance",
+    "name": "Finance",
+    "kind": "department",
+    "email": "finance.planning@aramco.example",
+    "escalationContact": "finance.head@aramco.example",
+    "ownsPlants": [],
+    "ownsFields": [],
+    "submits": []
+  }
+]

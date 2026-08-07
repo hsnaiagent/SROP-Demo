@@ -1,0 +1,41 @@
+[
+  {
+    "id": "rev-finance-approve",
+    "stakeholder": "Finance",
+    "channel": "approve"
+  },
+  {
+    "id": "rev-ospas-comment",
+    "stakeholder": "OSPAS",
+    "channel": "comment",
+    "rowRef": "refinery=JAZAN,bulk_plant=BP-JAZAN,product=DIESEL,month=2026-10",
+    "text": "BP-JAZAN has a 12-day turnaround in October. Even at the corrected 25.8 kb we cannot lift this volume - please plan 19.4 kb and carry the rest into November.",
+    "proposedValue": 19.4
+  },
+  {
+    "id": "rev-rabigh-upload",
+    "stakeholder": "Refinery RABIGH",
+    "channel": "upload",
+    "fileName": "RABIGH_tank_levels_rev2.xlsx",
+    "changes": [
+      {
+        "field": "opening_inventory_kb",
+        "rowRef": "bulk_plant=BP-RABIGH,product=DIESEL",
+        "before": 9.4,
+        "after": 11.8
+      },
+      {
+        "field": "opening_inventory_kb",
+        "rowRef": "bulk_plant=BP-RABIGH,product=FUEL-OIL",
+        "before": 6.9,
+        "after": 7.4
+      },
+      {
+        "field": "price_usd",
+        "rowRef": "product=GASOLINE-91,month=2026-11",
+        "before": 88.88,
+        "after": 94.2
+      }
+    ]
+  }
+]

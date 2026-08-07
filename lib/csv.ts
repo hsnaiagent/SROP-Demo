@@ -1,84 +1,98 @@
 /**
- * CSV loading for the server side. Hand-rolled rather than pulling in papaparse:
- * these six files have no quoted fields and no embedded commas, and the parser is
- * fifteen lines. Scope discipline — no new dependencies after Block 4.
+ * Server-side reads of `data/`. Nothing here touches the network and nothing here
+ * mutates a file — `data/` is the fixture set and is read-only at runtime.
  *
- * The one thing you must not get wrong is the line split. See below.
+ * Version 2 discovers the refinery inventory files from `stakeholders.json` rather
+ * than hardcoding two of them, so adding a refinery is a data change.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 
-import type { DemandRow, InventoryRow, LimitRow, PlanInput, PriceRow } from './types';
+import type {
+  InventoryRow,
+  LimitRow,
+  OutageRow,
+  PlanInput,
+  PriceRow,
+  ReferenceData,
+  Stakeholder,
+  SubmissionFile,
+  SubmissionKind,
+} from './types';
 
 export const DATA_DIR = path.join(process.cwd(), 'data');
-
-export const SUBMISSION_FILES = [
-  'sub_demand.csv',
-  'sub_prices.csv',
-  'sub_inv_yanbu.csv',
-  'sub_inv_jazan.csv',
-] as const;
-
-export const REFERENCE_FILES = ['ref_limits.csv', 'history_baseline.csv'] as const;
-
-/** Which stakeholder each file came from. Mirrors the table in the North prompt. */
-export const SOURCE_BY_FILE: Record<string, string> = {
-  'sub_demand.csv': 'OSPAS',
-  'sub_prices.csv': 'Demand Planning',
-  'sub_inv_yanbu.csv': 'Refinery YANBU',
-  'sub_inv_jazan.csv': 'Refinery JAZAN',
-};
 
 export type CsvRow = Record<string, string>;
 
 /**
- * NOTE: data/*.csv are CRLF. Splitting on '\n' alone leaves a trailing '\r' on the
- * LAST column of every row — which is exactly demand_kb, price_usd and
+ * Hand-rolled because these files have no quoted fields or embedded commas.
+ *
+ * data/*.csv are CRLF on Windows. Splitting on '\n' alone leaves a trailing '\r' on
+ * the last column of every row — which is exactly demand_kb, price_usd and
  * opening_inventory_kb. Number('30.3\r') is NaN, so every quantity silently becomes
- * zero and the plan comes out empty without throwing anything. Always /\r?\n/.
+ * zero and the whole plan comes out empty. Split on /\r?\n/.
  */
-export function parseCsv(text: string): { header: string[]; rows: CsvRow[] } {
+export function parseCsv(text: string): CsvRow[] {
   const lines = text.trim().split(/\r?\n/);
-  if (lines.length === 0) return { header: [], rows: [] };
-
+  if (lines.length === 0) return [];
   const header = lines[0].split(',').map((h) => h.trim());
-  const rows = lines.slice(1).map((line) => {
+  return lines.slice(1).map((line) => {
     const cells = line.split(',');
     return Object.fromEntries(header.map((h, i) => [h, (cells[i] ?? '').trim()]));
   });
-
-  return { header, rows };
 }
 
-const readFile = (name: string) => fs.readFileSync(path.join(DATA_DIR, name), 'utf8');
+const cache = new Map<string, CsvRow[]>();
 
-export const readCsv = (name: string) => parseCsv(readFile(name));
+export function readCsv(name: string): CsvRow[] {
+  const hit = cache.get(name);
+  if (hit) return hit;
+  const rows = parseCsv(fs.readFileSync(path.join(DATA_DIR, name), 'utf8'));
+  cache.set(name, rows);
+  return rows;
+}
 
-/** Blank, missing and non-numeric all collapse to 0 — R3's job is to flag them, not ours. */
+export function readJson<T>(name: string): T {
+  return JSON.parse(fs.readFileSync(path.join(DATA_DIR, name), 'utf8')) as T;
+}
+
+export function fileExists(name: string): boolean {
+  return fs.existsSync(path.join(DATA_DIR, name));
+}
+
 const num = (v: string | undefined): number => {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 };
 
-// ------------------------------------------------------------------ plan input
+// ------------------------------------------------------------------- directory
 
-export function loadPlanInput(): PlanInput {
-  const demand: DemandRow[] = readCsv('sub_demand.csv').rows.map((r) => ({
-    refinery: r.refinery,
-    bulkPlant: r.bulk_plant,
-    product: r.product,
-    month: r.month,
-    demandKb: num(r.demand_kb),
-  }));
+export function loadStakeholders(): Stakeholder[] {
+  return readJson<Stakeholder[]>('stakeholders.json');
+}
 
-  const prices: PriceRow[] = readCsv('sub_prices.csv').rows.map((r) => ({
-    product: r.product,
-    month: r.month,
-    priceUsd: num(r.price_usd),
-  }));
+export function refineries(): Stakeholder[] {
+  return loadStakeholders().filter((s) => s.kind === 'refinery');
+}
 
-  const limits: LimitRow[] = readCsv('ref_limits.csv').rows.map((r) => ({
+export function inventoryFileFor(refinery: string): string {
+  return `sub_inv_${refinery.toLowerCase()}.csv`;
+}
+
+/** Bulk plant -> the refinery that owns it. The authority check depends on this. */
+export function plantOwners(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const s of refineries()) {
+    for (const plant of s.ownsPlants) out[plant] = s.refinery!;
+  }
+  return out;
+}
+
+// --------------------------------------------------------------- typed loaders
+
+export const loadLimits = (): LimitRow[] =>
+  readCsv('ref_limits.csv').map((r) => ({
     refinery: r.refinery,
     bulkPlant: r.bulk_plant,
     product: r.product,
@@ -87,49 +101,120 @@ export function loadPlanInput(): PlanInput {
     capacity: num(r.capacity),
   }));
 
-  const inventory: InventoryRow[] = [
-    ...readCsv('sub_inv_yanbu.csv').rows,
-    ...readCsv('sub_inv_jazan.csv').rows,
-  ].map((r) => ({
-    bulkPlant: r.bulk_plant,
+export const loadPrices = (): PriceRow[] =>
+  readCsv('sub_prices.csv').map((r) => ({
     product: r.product,
-    openingInventoryKb: num(r.opening_inventory_kb),
+    month: r.month,
+    priceUsd: num(r.price_usd),
   }));
 
-  return { demand, prices, limits, inventory };
+export const loadDemand = () =>
+  readCsv('sub_demand.csv').map((r) => ({
+    refinery: r.refinery,
+    bulkPlant: r.bulk_plant,
+    product: r.product,
+    month: r.month,
+    demandKb: num(r.demand_kb),
+  }));
+
+export const loadOutage = (): OutageRow[] =>
+  readCsv('ref_outage.csv').map((r) => ({
+    bulkPlant: r.bulk_plant,
+    month: r.month,
+    outageDays: num(r.outage_days),
+  }));
+
+export function loadInventory(refinery?: string): InventoryRow[] {
+  const files = refinery
+    ? [inventoryFileFor(refinery)]
+    : refineries().map((s) => inventoryFileFor(s.refinery!));
+  return files
+    .filter(fileExists)
+    .flatMap((f) => readCsv(f))
+    .map((r) => ({
+      bulkPlant: r.bulk_plant,
+      product: r.product,
+      openingInventoryKb: num(r.opening_inventory_kb),
+    }));
 }
 
-// ---------------------------------------------------------------- text bundles
-
-/**
- * The `=== FILE: name ===` marker is not decoration — the source-attribution table
- * in the North prompt keys off it to set each flag's `source`. Change the format
- * here and you must change the prompt too.
- */
-const bundle = (names: readonly string[]): string =>
-  names.map((n) => `=== FILE: ${n} ===\n${readFile(n).trim()}`).join('\n\n');
-
-export const buildSubmissionsText = () => bundle(SUBMISSION_FILES);
-export const buildReferenceText = () => bundle(REFERENCE_FILES);
-
-// -------------------------------------------------------------- pane 1 support
-
-export interface SubmissionMeta {
-  file: string;
-  source: string;
-  /** Column headers differ between files on purpose — that heterogeneity is the point. */
-  columns: string[];
-  rowCount: number;
+/** `REFINERY|PLANT|PRODUCT` -> 12-month mean. The deviation rule's denominator. */
+export function loadBaseline(): Record<string, number> {
+  const buckets = new Map<string, number[]>();
+  for (const r of readCsv('history_baseline.csv')) {
+    const key = `${r.refinery}|${r.bulk_plant}|${r.product}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(num(r.demand_kb));
+    else buckets.set(key, [num(r.demand_kb)]);
+  }
+  const out: Record<string, number> = {};
+  for (const [key, values] of buckets) {
+    out[key] = values.reduce((a, b) => a + b, 0) / values.length;
+  }
+  return out;
 }
 
-export function loadSubmissionMeta(): SubmissionMeta[] {
-  return SUBMISSION_FILES.map((file) => {
-    const { header, rows } = readCsv(file);
-    return {
-      file,
-      source: SOURCE_BY_FILE[file] ?? file,
-      columns: header,
-      rowCount: rows.length,
-    };
+/** The same history, kept as a series, for the dashboard chart. */
+export function loadBaselineSeries(): Record<string, Array<{ month: string; value: number }>> {
+  const out: Record<string, Array<{ month: string; value: number }>> = {};
+  for (const r of readCsv('history_baseline.csv')) {
+    const key = `${r.refinery}|${r.bulk_plant}|${r.product}`;
+    (out[key] ??= []).push({ month: r.month, value: num(r.demand_kb) });
+  }
+  for (const series of Object.values(out)) series.sort((a, b) => a.month.localeCompare(b.month));
+  return out;
+}
+
+interface PrevCycle {
+  id: string;
+  horizon: string[];
+  demand: Record<string, number>;
+  requestTemplate: Array<{ recipient: string; items: string[] }>;
+}
+
+export const loadPrevCycle = (): PrevCycle => readJson<PrevCycle>('prev_cycle.json');
+
+export function loadPlanInput(): PlanInput {
+  return {
+    demand: loadDemand(),
+    prices: loadPrices(),
+    limits: loadLimits(),
+    inventory: loadInventory(),
+    baseline: loadBaseline(),
+    lastCycle: loadPrevCycle().demand,
+  };
+}
+
+export function loadReference(): ReferenceData {
+  const prev = loadPrevCycle();
+  return {
+    limits: loadLimits(),
+    outage: loadOutage(),
+    baseline: loadBaseline(),
+    baselineSeries: loadBaselineSeries(),
+    stakeholders: loadStakeholders(),
+    lastCycle: prev.demand,
+    requestTemplate: prev.requestTemplate,
+  };
+}
+
+// ------------------------------------------------------------- submission meta
+
+/** What a source's submission looks like on the Submissions card. */
+export function submissionFilesFor(source: string, kind: SubmissionKind): SubmissionFile[] {
+  const describe = (name: string, rows: CsvRow[]): SubmissionFile => ({
+    name,
+    kind: name.endsWith('.xlsx') ? 'xlsx' : 'csv',
+    sizeKb: Math.max(1, Math.round(rows.length * 0.06 * 10) / 10),
+    rowCount: rows.length,
+    columns: Object.keys(rows[0] ?? {}),
   });
+
+  if (kind === 'demand') return [describe('OSPAS_demand_4month.csv', readCsv('sub_demand.csv'))];
+  if (kind === 'prices') return [describe('DP_product_prices.csv', readCsv('sub_prices.csv'))];
+
+  const refinery = source.replace(/^Refinery\s+/, '');
+  const file = inventoryFileFor(refinery);
+  if (!fileExists(file)) return [];
+  return [describe(`${refinery}_tank_levels.csv`, readCsv(file))];
 }

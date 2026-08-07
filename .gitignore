@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# runtime cycle state. Kept out of data/ so the Next dev watcher does not reload
+# the page every time a flag is resolved mid-demo.
+/.srop-state/

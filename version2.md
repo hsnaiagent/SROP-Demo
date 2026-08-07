@@ -1010,12 +1010,42 @@ The assistant reaches the same three outcomes. *"October diesel for Jazan is too
 
 Four agents. Each is specified by what triggers it, what it reads, what it writes, the rules it applies, and — the part that matters most for a system a planner has to trust — what it does when it cannot do its job.
 
-The specifications are platform-agnostic. Version 1 runs its validation through a Cohere North automation; nothing in this section depends on that choice remaining true.
+This section is a **logic design**, and it is deliberately complete enough to be implemented on any runtime. The demo implements it as deterministic code in the platform; a production build could move any of the four onto an agent platform without changing a single rule below. What must not change is the behavior, so that is what is specified.
 
-Two principles apply to all four:
+```mermaid
+flowchart LR
+    Chat["Planner chat"] --> Orc["Orchestrator<br/>drafts requests, runs the SLA ladder"]
+    Sub["Submission arrives"] --> Val["Validation Agent<br/>one per source, in parallel"]
+    Upload["Stakeholder re-upload"] --> Rec["File-Recognition Agent<br/>authority and magnitude"]
+    Store[("Cycle record<br/>owned by the platform")]
+    Orc --> Store
+    Val --> Store
+    Rec --> Store
+    Store --> Intake["Intake Agent<br/>master workbook"]
+    Intake --> LP["LP model"]
+    LP --> Store
+```
+
+### Three principles
 
 - **No agent crosses a gate.** Agents prepare work and surface decisions. Y crosses gates.
 - **Every agent fails loudly.** No agent silently drops, guesses at, or discards data. Failure produces a visible item on Cycle Home, never a quiet omission.
+- **No agent holds state.** The cycle record belongs to the platform. Every agent is a pure function: the relevant slice in, a structured result out. The platform writes the result back and appends the audit entry. An agent that needed memory between runs would be unimplementable on most runtimes, and untestable on all of them.
+
+### Deterministic by design, not by compromise
+
+The rules in section 4 are arithmetic — a deviation percentage, a min/max comparison, an empty-or-negative check, a set-membership test. They are implemented as code, and that is a requirement rather than a shortcut.
+
+This was measured rather than assumed. Version 1's validator was first built to compute the same rules inside a model-driven sandbox. Three runs at temperature zero produced three different wrong answers: fabricated flags on one run, then a cross-plant limit lookup that validated Jazan's inventory against Yanbu's limits, then three of four defects missed entirely. [CHECKLIST.md](CHECKLIST.md) records the detail. The fix was to stop asking a model to do arithmetic.
+
+So the division of labour across all four agents is fixed:
+
+| Work | Where it runs | Why |
+|---|---|---|
+| Rules, thresholds, diffs, authority checks, plan arithmetic, timers, gates | code | there is exactly one correct answer and it must be reproducible |
+| `plainEnglish` flag prose, email drafts, the orchestrator chat, natural-language edits, the stakeholder chat | a language model, with a template fallback | there is no correct answer, only a clearer or less clear one |
+
+A validation result that cannot be reproduced is worth nothing to a planner who has to defend it, which is why the boundary sits exactly there.
 
 ### 9.1 Orchestrator
 
@@ -1025,7 +1055,9 @@ The coordinator. Unlike the other three it is not a single-shot transformation; 
 |---|---|
 | **Triggers** | Y sends a chat message on Requests; a request is sent; an SLA timer expires; any state transition anywhere in the cycle |
 | **Reads** | Y's chat text, the previous cycle's request log, the stakeholder directory, the current cycle record |
-| **Writes** | request drafts, email drafts, reminder and escalation emails, every audit entry, the learned-justification list |
+| **Emits** | request drafts, email drafts, reminder and escalation emails, audit entries, learned-justification patterns |
+
+The orchestrator *emits* audit entries; the platform persists them. It owns no store of its own. Request drafting and completeness checking are the only conversational parts of the system — §7.2 requires the orchestrator to ask a clarifying question and then wait for an answer — so those two are a dialogue, not a single-shot transformation. Everything else it does is a timer or a write-back.
 
 **Responsibilities**
 
@@ -1057,7 +1089,9 @@ One instance per submission, running in parallel. Refinery YANBU's file is valid
 
 **On failure**
 
-The source's card returns to `received, not validated` with the error and a retry button. The rest of the cycle is unaffected, because instances are independent. A source can never be quietly marked clean because its validation crashed — the absence of a result is a distinct, visible state from a clean result.
+The source's card returns to `received, not validated` with the error and a retry button. The rest of the cycle is unaffected, because instances are independent — "in parallel" here means independent failure domains, not merely concurrent.
+
+**No default value is configured on failure, anywhere in this agent.** A default result — an empty flag list, most obviously — is indistinguishable from a clean submission, and would mark a source clean precisely because its validation crashed. The absence of a result must stay a distinct, visible state from a clean result. Retries are fine; a fallback value is not.
 
 ### 9.3 Intake Agent
 
@@ -1075,7 +1109,7 @@ The consolidator. Takes validated data from six unrelated shapes and produces th
 2. **Every cell is traceable.** The source trace maps each sheet back to a submission and a version, so any number in the workbook can be attributed.
 3. **Excluded series are carried, not dropped.** A series with no reference limits appears in the workbook marked excluded, so the plan can report it as excluded rather than silently omit it. Version 1's LPG-95 behavior.
 4. **Assumed data is marked in the workbook itself**, not just in the platform, so the marking survives being emailed around as a file.
-5. **Staleness is tracked.** Any change to underlying data marks the workbook stale immediately; the screen says so and Gate 2 will not pass on a stale build.
+5. **Staleness is tracked by the platform, not the agent.** Any change to underlying data marks the workbook stale immediately; the screen says so and Gate 2 will not pass on a stale build. The agent holds no state between runs and so cannot know it has been superseded — the platform does, and refuses the gate on its behalf.
 
 **On failure**
 
@@ -1093,7 +1127,7 @@ The gatekeeper on stakeholder self-service. It exists because letting stakeholde
 
 **Rules**
 
-1. **Identify the file.** Determine which of the known shapes it is — inventory, limits, demand, prices — from its columns, not its file name.
+1. **Identify the file.** Determine which of the known shapes it is from its columns, not its file name. The verdict is one of `inventory`, `limits`, `demand`, `prices`, `unrecognised` — a closed set, so downstream handling is a branch and never a string match on prose.
 2. **Diff against the issued draft.** Produce the exact list of changed cells. A file that changes nothing is reported as such rather than treated as an update.
 3. **Check authority per changed cell.** In-authority changes get a green verdict. Out-of-authority changes raise `OUT_OF_SCOPE_EDIT`, are quarantined, and travel to Y as suggestions — never rejected outright, never applied automatically.
 4. **Check magnitude.** Any changed value that would trip a validation rule raises that rule as a `draft_review` flag, even if the change is within authority. A refinery is allowed to change its own tank levels; it is not allowed to change them to something impossible without Y seeing it.
@@ -1101,7 +1135,7 @@ The gatekeeper on stakeholder self-service. It exists because letting stakeholde
 
 **On failure**
 
-If the file cannot be identified, the stakeholder is told which shapes are recognised and asked to re-upload or use the comment path instead. Nothing is applied on an uncertain identification.
+An unidentifiable file is **a verdict, not a failure**. `unrecognised` is a legitimate outcome: the stakeholder is told which shapes are recognised and asked to re-upload or use the comment path instead, and nothing is applied. Failure is reserved for the agent actually breaking, which surfaces the same way every other agent failure does — as a visible item, never as a silent pass.
 
 ---
 

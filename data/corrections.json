@@ -5,6 +5,12 @@
     "correctedValue": 25.8,
     "movesThePlan": true
   },
+  "HISTORICAL_DEVIATION:RIYADH|BP-QASSIM|JET-A1": {
+    "from": "OSPAS",
+    "reply": "Confirmed intentional. Qassim JET-A1 lifts every Hajj season - this is the fourth year running. The 12-month mean flattens it out.",
+    "correctedValue": null,
+    "movesThePlan": false
+  },
   "LIMIT_BREACH": {
     "from": "Refinery JAZAN",
     "reply": "Confirmed intentional. GASOLINE-91 is running an approved temporary over-fill under waiver TW-2026-114 ahead of the Q4 turnaround.",
@@ -20,6 +26,12 @@
   "UNKNOWN_ENTITY": {
     "from": "OSPAS",
     "reply": "Confirmed intentional. LPG-95 is a new grade approved for JAZAN; it has not been added to the reference limits file yet.",
+    "correctedValue": null,
+    "movesThePlan": false
+  },
+  "CROSS_SOURCE_CONFLICT": {
+    "from": "Demand Planning",
+    "reply": "ASPHALT is priced off the annual contract, not the monthly term sheet. We will add it to the monthly file from next cycle.",
     "correctedValue": null,
     "movesThePlan": false
   }

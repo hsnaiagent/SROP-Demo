@@ -1,116 +1,106 @@
-# Demo runbook
+# Demo runbook — version 2
 
 Everything needed on the day. Print it or keep it on the second screen.
 
-**This runbook covers the version 1 app — the one that runs today.** Every beat below
-is against the three-pane build in `app/`. Version 2 replaces one of those beats and
-moves another; the delta is in **When version 2 ships**, at the end. Do not mix the two
-scripts. Until v2 is built, the script below is the demo.
+**This runbook covers the version 2 platform** — eleven screens, seven identities, the
+full monthly cycle. The version 1 three-pane build and its script live on `main`.
 
 ---
 
 ## T-minus: pre-flight
 
-Run in order. If any step fails, the fallback is in **Failure playbook** below.
-
 ```powershell
 cd C:\Users\huawel\Desktop\Vibecoders\SROP-Demo
 
-npm run data            # 1. regenerates + verifies the CSVs. Must say "PASS - exactly the four planted defects"
-npm run check           # 2. typecheck + 16 tests. Must be 16/16
-npm run probe:auth      # 3. token still valid?  ⚠️ EXPIRES 2026-08-11 10:47 UTC
-npm run probe:execute   # 4. live run. Want: 4 flags, Yanbu clean, wall time under 90s
-npm run mock            # 5. refresh the fixture from that run
+npm run data      # 1. regenerate + verify the fixtures.
+                  #    Must say "PASS - exactly the eight planted defects"
+npm run check     # 2. typecheck + 20 unit tests. Must be 20/20
+npm run dev       # 3. leave running on port 3000
+npm run smoke     # 4. in a second terminal. Must be 50/50
 ```
 
-⚠️ **Step 1 fails on this machine as written.** `npm run data` invokes `python3`, which
-does not resolve here — Windows answers with the Microsoft Store shim and exit code
-9009. The interpreter is on the path as `python` (3.13.5). Run the two scripts directly
-instead:
+`npm run smoke` drives the entire cycle through the API and asserts every gate, every
+agent and every pinned number. If it is 50/50 the demo works. It finishes with the
+cycle archived, so **reset before presenting**: Cycle Home → Demo controls → Reset
+cycle.
 
-```powershell
-python scripts/generate_data.py
-python scripts/check_data.py     # must say "PASS - exactly the four planted defects"
-```
-
-Or skip step 1 entirely. `data/` is committed, and `npm run check` proves the four
-defects are intact without regenerating anything. Do not "fix" `package.json` on demo
-day — verified 16/16 on 2026-08-07 with the data exactly as committed.
-
-**Then start both servers and leave them running:**
-
-```powershell
-npm run dev             # terminal 1 — port 3000, LIVE. This is the demo.
-npm run demo:backup     # terminal 2 — port 3001, MOCK_MODE. Never touched unless 3000 dies.
-```
-
-Open **both** in tabs before you present. Switching tabs mid-demo is one keystroke;
-starting a server mid-demo is thirty seconds of silence.
+**Nothing here touches the network.** There is no token, no external service and no
+expiry. The rules engine is deterministic TypeScript and the language layer is
+templates, so the platform behaves identically offline.
 
 **Last checks:**
 
-- [ ] Browser zoom set so the evidence line is readable from the back of the room
+- [ ] Reset the cycle so you start on "Start new cycle"
+- [ ] Role switcher set to `Y — SROP Planner`
+- [ ] Browser zoom so the evidence line is readable from the back of the room
 - [ ] Notifications / Slack / email quit
-- [ ] Backup recording open in a third tab, paused at 0:00
-- [ ] `data/` untouched since the last `npm run data`
+- [ ] Second tab on `npm run demo:backup` (port 3001) as a fallback
 
 ---
 
-## The four minutes
+## The numbers
 
-Numbers in **bold** are said out loud. They come from `check_data.py` and
-`scripts/plan.test.mjs`, both of which are green — if the screen disagrees with this
-table, trust the screen and adjust, don't argue with it.
+Verified 2026-08-07. `npm run check` and `npm run smoke` both assert these.
 
-| Time | On screen | Say |
+| Figure | Value | Where it shows |
 |---|---|---|
-| **0:00** | Pane 1, four cards | "Four departments, four files, four different formats, arriving whenever they arrive. Today one person opens all of these in Excel and eyeballs them." |
-| **0:20** | Point at the differing column headers | "Different columns, different shapes, no shared source of truth." |
-| **0:25** | Click **Run Validation** | "This has already been run against these four files by a validation agent that has the 12-month history and every refinery's tank limits." |
-| **0:45** | Four flags, three sources red, Yanbu green | "Yanbu is clean. Three sources have problems — and it doesn't just say *wrong*, it shows you both numbers." |
-| **1:05** | Read flag #1's evidence line | "**41.2** against a 12-month mean of **25.1**. Plus **64%**. You can check that yourself in two seconds — that's the difference between a tool you trust and one you don't." |
-| **1:30** | Hover between the two buttons | "Notice what it did *not* do: it didn't fix anything. Every flag goes through the planner — accept it, or ask the source." |
-| **1:45** | Expand the email draft, edit a word, **Send** | "The planner doesn't write this. It's drafted with the numbers already in it." |
-| **2:05** | **Simulate response** → **25.8** → Accept | "In production Jazan re-uploads. Here I'm triggering it. They came back with **25.8** — it was a transcription error." |
-| **2:25** | Justify the other two with typed reasons | "Zero price is a real holiday shutdown. Accept, log the reason — and now it's in the record instead of in someone's head." |
-| **2:45** | **Click Generate while a flag is still open** → it shakes | "It won't run. Not a warning — a gate. Bad data cannot reach the optimizer." Close the last flag; the button unlocks. |
-| **3:05** | Two-column table | "Left column: the plan we'd have shipped on the data as submitted. Right: after validation. **15.4 kb** swing in October, **$66.50M** down to **$65.06M** — **$1.45 million** — from one flag." |
-| **3:35** | — | "Today this is three weeks and one person's memory. The optimizer is stubbed — Aramco has one, it drops in behind the same interface. What we built is everything around it." |
+| JAZAN BP-JAZAN DIESEL, Oct submitted | **41.2 kb** | flag evidence line |
+| its 12-month mean | **25.1 kb** | same line |
+| deviation | **+64%** | same line |
+| corrected to | **25.8 kb** | OSPAS reply |
+| production swing | **−15.4 kb** | plan-impact line, before commit |
+| revenue swing | **−$1.45M** | same line |
+| planned revenue, final | **$141.54M** | plan headline strip |
+| planned volume | **1,714 kb** | plan headline strip |
+| rows with a shortfall | **2** | plan headline strip |
+| rows outside their band | **3** | plan headline strip |
+| plan rows | **84** | Feasibility tab |
+| planted defects | **8** | validation screen |
 
-**The 3:05 beat is the demo.** If you are running long, cut 1:45–2:25 down to a single
-flag. Never cut the two-column table.
+The shortfalls and band breaches are all at **BP-QASSIM JET-A1** — the seasonal uplift
+series. That is the best unscripted moment in the demo: the uplift is *legitimate*, it
+gets justified with a threshold override, and the plan is still infeasible because the
+uplift exceeds Qassim's capacity. Validation passed and the plan is still wrong, which
+is exactly what the Feasibility tab exists to catch.
 
-> In version 2 this beat moves to 2:05 and the two-column table is gone. See
-> **When version 2 ships**. Nothing changes for the v1 demo.
+---
 
-### On the 0:25 line
+## The five minutes
 
-Validation is fetched when the page loads, so **Run Validation** reveals a result that
-already exists. The line above is written to be true. Do not say "it's running now"
-while the 1.1s spinner turns. If a judge asks directly: *"it runs in about 25 seconds
-against the live instance; I prefetch it so we're not watching a spinner."* That is a
-better answer than a surprised one.
+| Time | Screen | Say |
+|---|---|---|
+| **0:00** | Cycle Home, no cycle | "One planner runs this today. Four months ahead, six data sources, all Excel, all email. Watch what the platform holds him to." Click **Start new cycle**. |
+| **0:20** | Requests | Type *"Standard monthly pull. Also ask Jazan about the October outage."* → "He describes it. The orchestrator drafts six requests, compares them against last cycle so nothing routine is dropped, and marks the one ad-hoc ask **new this cycle**. It does not send — he reviews first." Send. |
+| **0:50** | Role switcher → a refinery → Submit Data | "Every stakeholder gets a link. They upload themselves. No mailbox, no version confusion." Submit two or three sources. |
+| **1:20** | Submissions | "Five in, one silent. One validation agent per source, running independently." Click **Validate**. |
+| **1:40** | Validation | "Eight anomalies. It doesn't say *wrong* — it shows both numbers." Read the JAZAN line: "**41.2** against a 12-month mean of **25.1**. Plus **64%**. Check it yourself." |
+| **2:10** | Validation | Send the query, **Simulate reply**, then stop on the confirmation. "**This** is the line that matters. Before he commits, it tells him the fix is worth **one and a half million dollars**. That's the difference between correcting data and understanding it." Accept. |
+| **2:40** | Validation | Open the Qassim flag → **Raise threshold for this series** → 120%, reason *Hajj season uplift*. "Three flags close at once, with his reason attached. It's standing policy now, visible on the dashboard — not a note in someone's head." |
+| **3:00** | Cycle Home | "The silent one." **Skip a week** → the fallback card appears. "Day three reminder, day five escalation to the department head. Day seven it does **not** decide — carrying stale data into a plan is a business decision." Confirm the fallback. |
+| **3:20** | Master File & Plan | "Every flag resolved, so Gate 1 opens." Build → show a source trace → Approve → **Run plan**. |
+| **3:40** | Feasibility tab | "**Two rows with a shortfall**, three outside their tank band." Click the shortfall stat. "All at Qassim. That uplift was legitimate — and the plan still can't serve it, because it exceeds capacity. Validation passed and the plan is still wrong. That's why this tab exists." |
+| **4:10** | Reasonableness tab | "Same rows, different question: is this plausible against history. A plan can satisfy every constraint and still be wrong." Issue the draft. |
+| **4:30** | Role switcher → Refinery RABIGH → Review | "Their rows, next to their own capacity and tank band — which is what they actually need to answer the question. And they can propose a change." **Check and submit** → the verdict. "It caught that they also changed a price they don't own. Held, not applied, and it told *them* first." |
+| **4:50** | Draft SROP Review → publish | "He works the queue, reruns, and publishes. Gate 4 won't let him publish over an unresolved comment or a stale plan." |
+
+**The 2:10 beat is the demo.** If you are running long, cut 0:50 and 4:10. Never cut the
+plan-impact line or the Qassim shortfall.
 
 ---
 
 ## Failure playbook
 
-Rehearse the first two at least once — knowing the recovery is what stops the panic.
-
-| What breaks | Tell | Do |
-|---|---|---|
-| **North is down / slow / 401** | Pane 1 shows an error, or Run Validation hangs | Switch to the **port 3001 tab**. Say nothing about it. Everything downstream is identical. |
-| **Token expired** | Same as above; `probe:auth` would say 401 | Same fix — port 3001. Re-issuing a token mid-demo is not a thing you do on stage. |
-| **Flags come back wrong** (not 4, wrong sources) | Pane 2 looks off | Port 3001. The fixture is a known-good real response. |
-| **Gate won't unlock** | Counter stuck above 0 | A flag is in `responded` — it needs **Accept**, not just Simulate. Accept it. |
-| **Plan table looks wrong** | Numbers don't match the table above | Don't debug live. Narrate the delta column and move to the close. |
-| **Everything breaks** | — | Play the recording and narrate over it. Judges forgive that; they don't forgive silence. |
+| What breaks | Do |
+|---|---|
+| **A gate won't open** | Read the reason next to it — it always says what is blocking. Usually an undecided excluded series or a source that never reported. |
+| **Cycle is in a weird state** | Cycle Home → Demo controls → **Reset cycle**. Five seconds, and `data/` is untouched. |
+| **The dev server dies** | Switch to the port 3001 tab. State is on disk, so nothing is lost. |
+| **A number on screen disagrees with this table** | Trust the screen and move on. Do not debug live. |
+| **Everything breaks** | Play the recording and narrate over it. |
 
 ---
 
 ## Rehearsal log
-
-Three full run-throughs, timed, no stopping to fix things.
 
 | # | Date | Time | What went wrong | Fixed? |
 |---|---|---|---|---|
@@ -118,88 +108,27 @@ Three full run-throughs, timed, no stopping to fix things.
 | 2 | | | | |
 | 3 | | | | |
 
-Target: **under 4:00** with the 3:05 beat landing on time. If a run goes long, cut
-narration, not features — the build is finished and every cut costs less than a
-half-explained pane.
+Target: **under 5:00** with the 2:10 plan-impact beat landing on time.
 
 ---
 
-## What we did not build — say this fast and unapologetically
+## What is real and what is not
 
-Auth · stakeholder portal · real email delivery · draft-review loop · audit archive ·
-the optimizer itself.
+Say this fast and unapologetically.
 
-*A team that knows exactly what it didn't build reads as a team that made choices.*
+**Real:** the six validation rules and their arithmetic · the four gates · per-source
+validation · the SLA and escalation ladder · field-level authority · the full audit
+trail · persistence across a refresh · the master workbook and its source trace.
 
----
+**Not real:** authentication is a role switcher · uploads are acknowledged then the
+pre-generated fixture is used · email is drafted and stored, never delivered · the LP
+model is deterministic arithmetic, not an optimizer · no SAP or upstream APIs.
 
-## When version 2 ships
+If asked why the rules are code rather than a model: three earlier runs at temperature
+zero produced three different wrong answers, including validating one refinery's tank
+levels against another's limits. A validation a planner cannot reproduce is one he
+cannot defend. See [CHECKLIST.md](CHECKLIST.md).
 
-Everything above stays valid until the v2 build replaces `app/`. This section is the
-delta, so the script can be rewritten in one sitting rather than rediscovered. The full
-spec is [version2.md](version2.md).
-
-### The 3:05 table is gone, and the number moves earlier
-
-Version 1 ends on a two-column table comparing the plan as submitted against the plan
-after validation. Across ~32 rows, one row differs. It was retired in v2 because it
-answers a question the planner has already answered — he made every correction himself,
-one at a time, and approved each one.
-
-The arithmetic survives. It moves to the moment Y accepts a correction, where it is
-shown as one line on the confirmation step (version2.md §7.4):
-
-> Applying **25.8** changes October production at BP-JAZAN by **−15.4 kb** and plan
-> revenue by **−$1.45M**.
-
-**This is a better beat, not a lost one.** The money lands at the instant of the human
-decision instead of forty seconds later in a table, and it makes a sharper point: the
-platform tells the planner what a correction is worth *before* he commits it. The
-numbers are unchanged and `scripts/plan.test.mjs` still asserts them — test 16, green.
-
-Say it roughly like this, on the Accept click:
-
-> "Watch the confirmation. It doesn't just apply the fix — it tells him the fix is worth
-> **one and a half million dollars** before he clicks. That's the difference between
-> correcting data and understanding it."
-
-### What the plan screen shows instead
-
-Two tabs, both against real references (version2.md §7.6):
-
-- **Feasibility** — demand, production, capacity and utilization, closing inventory
-  against the min–max band, and shortfall. Sorted worst-first.
-- **Reasonableness** — planned against the 12-month baseline and against last cycle.
-
-Plus a headline strip counting rows with a shortfall and rows outside their band. On a
-healthy plan both read zero, which is itself the line to say: *"the check is that these
-are zero, and you can see at a glance that they are."*
-
-### New beats available
-
-v2 makes the whole cycle demonstrable, so the four minutes get rebalanced. Candidates,
-in rough priority:
-
-| Beat | Why it earns its time |
-|---|---|
-| Role switcher → a refinery uploads its own file | Kills the "where does the data come from" question before it is asked |
-| A silent stakeholder → reminder → escalation → assumed-data fallback | The escalation problem is the one Y described most vividly; nothing in v1 shows it |
-| Correction confirmation with the $1.45M line | The money beat, relocated |
-| Stakeholder rejects the draft with a comment → Y accepts → rerun → v2 issued | Closes the loop the v1 demo could only narrate |
-| Feasibility tab with a shortfall row | Proves the plan is being checked, not just produced |
-
-### What the closing line becomes
-
-The "did not build" list shrinks to the things that are still genuinely fake: real
-authentication, real file ingestion, real email delivery, SAP APIs, and the optimizer.
-Portal, draft-review loop, escalation and audit all move from *narrated* to *shown*.
-
-### Pre-flight changes
-
-- `npm run data` regenerates a larger set — four refineries, six bulk plants, six
-  products, eight planted defects. `check_data.py` must be updated to assert all eight.
-- `npm run check` will report more than 16 tests; the count in the pre-flight block
-  above needs updating to whatever the v2 suite lands on.
-- A cycle-state reset step is needed, since v2 persists to `data/state/`. A demo that
-  starts mid-cycle because the last rehearsal left state behind is the most likely new
-  failure mode, and it belongs in the failure playbook.
+The agent **logic** is the deliverable and it is specified in
+[version2.md](version2.md) §9 — inputs, outputs, rules and failure behaviour for all
+four agents, on any runtime.

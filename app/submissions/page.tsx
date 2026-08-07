@@ -1,0 +1,226 @@
+'use client';
+
+/**
+ * Screen 3 — Submissions. version2.md §7.3.
+ *
+ * Version 1's SubmissionsPane grown into the collection tracker: one card per requested
+ * source rather than one per file, with the SLA state on the ones that have not arrived.
+ * Validation is per source and runs independently, so one source's spinner says nothing
+ * about another's.
+ */
+
+import Link from 'next/link';
+
+import { slaLabel } from '@/lib/policy';
+import type { Submission } from '@/lib/types';
+
+import { useCycle } from '../providers';
+import {
+  Badge,
+  Banner,
+  Button,
+  Card,
+  Dot,
+  EmptyState,
+  Grid,
+  Screen,
+  relTime,
+} from '../components/ui';
+
+export default function SubmissionsPage() {
+  const { cycle, act, busy } = useCycle();
+
+  if (!cycle) {
+    return (
+      <Screen title="Submissions">
+        <EmptyState title="No cycle open">Start a cycle on Cycle Home first.</EmptyState>
+      </Screen>
+    );
+  }
+
+  const received = cycle.submissions.filter((s) => s.versions.length > 0);
+  const unvalidated = received.filter((s) => s.status === 'submitted');
+  const validating = busy === 'validate';
+
+  return (
+    <Screen
+      title="Submissions"
+      lede={`${received.length} of ${cycle.submissions.length} received. Validation runs one instance per source, in parallel — a failure on one leaves the rest untouched.`}
+      actions={
+        <Button
+          tone="primary"
+          disabled={busy !== null || unvalidated.length === 0}
+          onClick={() => act('validate')}
+        >
+          {validating
+            ? 'Validating…'
+            : unvalidated.length === 0
+              ? received.length > 0
+                ? 'All validated'
+                : 'Nothing to validate'
+              : `Validate ${unvalidated.length} received`}
+        </Button>
+      }
+    >
+      {cycle.requests.every((r) => r.status === 'draft') && (
+        <Banner tone="warn" title="Requests have not been sent">
+          Nothing will arrive until the requests go out. Send them from the Requests screen.
+        </Banner>
+      )}
+
+      <Grid cols={3}>
+        {cycle.submissions.map((sub) => (
+          <SourceCard key={sub.id} submission={sub} validating={validating} />
+        ))}
+      </Grid>
+    </Screen>
+  );
+}
+
+function SourceCard({ submission, validating }: { submission: Submission; validating: boolean }) {
+  const { cycle, act, busy } = useCycle();
+  const request = cycle!.requests.find((r) => r.recipient === submission.source);
+  const flags = cycle!.flags.filter(
+    (f) => f.source === submission.source && f.origin === 'validation' && f.status !== 'superseded'
+  );
+  const latest = submission.versions.at(-1);
+  const spinning = validating && submission.status === 'submitted';
+
+  const tone =
+    submission.status === 'clean'
+      ? 'good'
+      : submission.status === 'flagged'
+        ? 'bad'
+        : submission.daysWaiting >= 5
+          ? 'bad'
+          : submission.daysWaiting >= 3
+            ? 'warn'
+            : 'default';
+
+  return (
+    <Card
+      tone={tone}
+      title={
+        <span className="flex items-center gap-2">
+          <StatusMark submission={submission} flagCount={flags.length} spinning={spinning} />
+          {submission.source}
+        </span>
+      }
+      subtitle={request?.items[0] ?? 'nothing requested'}
+    >
+      <div className="flex flex-col gap-3">
+        {latest ? (
+          <>
+            {latest.files.map((file) => (
+              <div key={file.name} className="flex flex-col gap-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="truncate font-mono text-xs text-zinc-200">{file.name}</span>
+                  <Badge>{file.kind}</Badge>
+                </div>
+                <span className="font-mono text-xs text-zinc-500">
+                  {file.rowCount} rows · {file.sizeKb} kb · {relTime(latest.receivedAt)}
+                </span>
+                <span className="truncate font-mono text-[11px] text-zinc-600" title={file.columns.join(', ')}>
+                  {file.columns.join(' · ')}
+                </span>
+              </div>
+            ))}
+
+            {submission.versions.length > 1 && (
+              <Badge tone="info">
+                v{submission.versions.length} · resubmitted {relTime(latest.receivedAt)}
+              </Badge>
+            )}
+            {submission.assumed && (
+              <Badge tone="warn">assumed — carried from cycle 2026-08</Badge>
+            )}
+            {latest.note && <p className="text-xs italic text-zinc-400">&ldquo;{latest.note}&rdquo;</p>}
+            {submission.crossSourcePending && (
+              <p className="text-xs text-zinc-500">
+                Cross-source checks pending — waiting on another source to arrive.
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="font-mono text-xs text-zinc-500">{slaLabel(submission, request)}</p>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          {submission.versions.length === 0 && request?.status === 'sent' && (
+            <>
+              {submission.daysWaiting >= 7 && (
+                <Button
+                  size="sm"
+                  tone="primary"
+                  disabled={busy !== null}
+                  onClick={() => act('confirm_fallback', { source: submission.source })}
+                >
+                  Use last cycle&apos;s data
+                </Button>
+              )}
+              <Button
+                size="sm"
+                disabled={busy !== null}
+                onClick={() => act('advance_clock', { days: 1 })}
+                title="Advances the shared demo clock by one business day"
+              >
+                Advance a day
+              </Button>
+            </>
+          )}
+
+          {submission.status === 'submitted' && (
+            <Button
+              size="sm"
+              tone="primary"
+              disabled={busy !== null}
+              onClick={() => act('validate', { source: submission.source })}
+            >
+              Validate
+            </Button>
+          )}
+
+          {submission.status === 'flagged' && (
+            <Link href="/validation">
+              <Button size="sm" tone="ghost">
+                Review {flags.length} flag{flags.length === 1 ? '' : 's'}
+              </Button>
+            </Link>
+          )}
+
+          {(submission.status === 'clean' || submission.assumed) && (
+            <Link href="/dashboard">
+              <Button size="sm" tone="quiet">
+                View data
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/** Version 1's StatusDot, extended for the states version 2 adds. */
+function StatusMark({
+  submission,
+  flagCount,
+  spinning,
+}: {
+  submission: Submission;
+  flagCount: number;
+  spinning: boolean;
+}) {
+  if (spinning) {
+    return <span className="inline-block size-3 animate-spin rounded-full border-2 border-zinc-700 border-t-amber-400" />;
+  }
+  if (submission.assumed) return <Badge tone="warn">assumed</Badge>;
+  if (submission.status === 'clean') return <span className="text-emerald-400">✓</span>;
+  if (submission.status === 'flagged') {
+    return <Badge tone="bad" mono>{flagCount}</Badge>;
+  }
+  if (submission.daysWaiting >= 5) return <Dot tone="bad" />;
+  if (submission.daysWaiting >= 3) return <Dot tone="warn" />;
+  if (submission.versions.length > 0) return <Dot tone="good" />;
+  return <Dot tone="idle" />;
+}

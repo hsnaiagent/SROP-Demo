@@ -4,10 +4,12 @@
  *   npm run test:plan
  *
  * Runs against the real CSVs in data/, so it fails loudly if the fixtures drift.
- * Two things it guards:
+ * Three things it guards:
  *   1. Determinism — same input twice must produce byte-identical output. That is
- *      the whole reason the plan arithmetic lives in TypeScript and not in the LLM.
- *   2. The three numbers said out loud on stage: -15.4 kb, -$1.45M, $66.50M.
+ *      the whole reason the plan arithmetic lives in TypeScript and not in a model.
+ *   2. The numbers said out loud on stage: -15.4 kb and -$1.45M.
+ *   3. That every row can be checked against a constraint — the version 1 defect
+ *      where PlanRow dropped the bulk plant that its limits are defined on.
  */
 
 import test from 'node:test';
@@ -16,18 +18,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildPlan, totalRevenue, applyCorrection } from '../lib/plan.ts';
+import { buildPlan, totalRevenue, applyCorrection, feasibilityStatus } from '../lib/plan.ts';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DATA = path.join(ROOT, 'data');
 
 // ------------------------------------------------------------- tiny CSV reader
 // Deliberately minimal: these files have no quoted fields or embedded commas.
-//
-// NOTE: data/*.csv are CRLF. Splitting on '\n' alone leaves a trailing '\r' on the
-// LAST column of every row — which is exactly demand_kb, price_usd and
-// opening_inventory_kb. Number('30.3\r') is NaN, so every quantity silently became
-// zero and the whole plan came out empty. Split on /\r?\n/.
+// Split on /\r?\n/ — the files are CRLF and a trailing '\r' turns every quantity
+// into NaN, which empties the plan without throwing.
 const readCsv = (name) => {
   const lines = fs.readFileSync(path.join(DATA, name), 'utf8').trim().split(/\r?\n/);
   const header = lines[0].split(',');
@@ -37,9 +36,30 @@ const readCsv = (name) => {
   });
 };
 
+const readJson = (name) => JSON.parse(fs.readFileSync(path.join(DATA, name), 'utf8'));
+
 const num = (v) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
+};
+
+/** Discovered from the directory, not hardcoded — version 2 has four refineries. */
+const inventoryFiles = () =>
+  readJson('stakeholders.json')
+    .filter((s) => s.kind === 'refinery')
+    .map((s) => `sub_inv_${s.refinery.toLowerCase()}.csv`)
+    .filter((f) => fs.existsSync(path.join(DATA, f)));
+
+const baseline = () => {
+  const buckets = new Map();
+  for (const r of readCsv('history_baseline.csv')) {
+    const key = `${r.refinery}|${r.bulk_plant}|${r.product}`;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(num(r.demand_kb));
+  }
+  return Object.fromEntries(
+    [...buckets].map(([k, v]) => [k, v.reduce((a, b) => a + b, 0) / v.length])
+  );
 };
 
 const loadInput = () => ({
@@ -63,14 +83,15 @@ const loadInput = () => ({
     maxLevel: num(r.max_level),
     capacity: num(r.capacity),
   })),
-  inventory: [
-    ...readCsv('sub_inv_yanbu.csv'),
-    ...readCsv('sub_inv_jazan.csv'),
-  ].map((r) => ({
-    bulkPlant: r.bulk_plant,
-    product: r.product,
-    openingInventoryKb: num(r.opening_inventory_kb),
-  })),
+  inventory: inventoryFiles()
+    .flatMap((f) => readCsv(f))
+    .map((r) => ({
+      bulkPlant: r.bulk_plant,
+      product: r.product,
+      openingInventoryKb: num(r.opening_inventory_kb),
+    })),
+  baseline: baseline(),
+  lastCycle: readJson('prev_cycle.json').demand,
 });
 
 /** The one flag that moves the plan. Mirrors corrections.json. */
@@ -93,13 +114,56 @@ test('buildPlan does not mutate its input', () => {
   assert.equal(JSON.stringify(input), before);
 });
 
-test('LPG-95 is excluded, not silently dropped', () => {
+test('LPG-95 is excluded with the volume at stake, not silently dropped', () => {
   const { rows, excluded } = buildPlan(loadInput());
-  assert.deepEqual(excluded, ['JAZAN|BP-JAZAN|LPG-95']);
+
+  assert.equal(excluded.length, 1, 'exactly one unplannable series');
+  const [lpg] = excluded;
+  assert.equal(lpg.key, 'JAZAN|BP-JAZAN|LPG-95');
+  assert.equal(lpg.product, 'LPG-95');
+  assert.equal(lpg.bulkPlant, 'BP-JAZAN');
+  assert.deepEqual(lpg.months, ['2026-11']);
+  assert.equal(lpg.demandKb, 6.4, 'the excluded row must state the volume not planned');
+  assert.equal(lpg.reason, 'no reference limits');
+
   assert.equal(
     rows.some((r) => r.product === 'LPG-95'),
     false,
     'an unplannable series must not appear in the plan rows'
+  );
+});
+
+test('every plan row can be checked against its own limits', () => {
+  const { rows } = buildPlan(loadInput());
+  const limits = new Map(
+    readCsv('ref_limits.csv').map((r) => [`${r.refinery}|${r.bulk_plant}|${r.product}`, r])
+  );
+
+  for (const row of rows) {
+    // The version 1 defect: without bulkPlant, this join is impossible and a row at
+    // one plant gets validated against another plant's limits.
+    assert.ok(row.bulkPlant, 'every row must carry its bulk plant');
+    const key = `${row.refinery}|${row.bulkPlant}|${row.product}`;
+    const limit = limits.get(key);
+    assert.ok(limit, `no limit row for ${key}`);
+    assert.equal(row.capacity, num(limit.capacity));
+    assert.equal(row.minLevel, num(limit.min_level));
+    assert.equal(row.maxLevel, num(limit.max_level));
+    assert.ok(Number.isFinite(row.demand), 'demand must be carried out');
+    assert.ok(Number.isFinite(row.opening), 'opening must be carried out');
+    assert.ok(feasibilityStatus(row), 'every row must resolve to a status');
+  }
+});
+
+test("YANBU's two bulk plants stay distinct rows", () => {
+  const { rows } = buildPlan(loadInput());
+  const yanbuDieselSept = rows.filter(
+    (r) => r.refinery === 'YANBU' && r.product === 'DIESEL' && r.month === '2026-09'
+  );
+  assert.equal(yanbuDieselSept.length, 2, 'BP-YANBU and BP-MADINAH are separate series');
+  assert.deepEqual(
+    yanbuDieselSept.map((r) => r.bulkPlant).sort(),
+    ['BP-MADINAH', 'BP-YANBU']
   );
 });
 
@@ -112,6 +176,7 @@ test('applyCorrection touches exactly one row', () => {
   );
   assert.equal(changed.length, 1, 'exactly one demand row may change');
   assert.equal(changed[0].refinery, 'JAZAN');
+  assert.equal(changed[0].bulkPlant, 'BP-JAZAN');
   assert.equal(changed[0].product, 'DIESEL');
   assert.equal(changed[0].month, '2026-10');
   assert.equal(changed[0].demandKb, 41.2, 'the original value must be the bad one');
@@ -134,7 +199,11 @@ test('the October swing is -15.4 kb and the plan moves by -$1.45M', () => {
 
   const octoberDiesel = (rows) =>
     rows.find(
-      (r) => r.month === '2026-10' && r.refinery === 'JAZAN' && r.product === 'DIESEL'
+      (r) =>
+        r.month === '2026-10' &&
+        r.refinery === 'JAZAN' &&
+        r.bulkPlant === 'BP-JAZAN' &&
+        r.product === 'DIESEL'
     );
 
   const swing = Number(
@@ -151,11 +220,21 @@ test('the October swing is -15.4 kb and the plan moves by -$1.45M', () => {
   console.log(`  resolved revenue: $${(resolvedRevenue / 1_000_000).toFixed(2)}M`);
   console.log(`  delta:            $${deltaM}M\n`);
 
+  // The two numbers the demo says out loud. They depend only on the JAZAN DIESEL
+  // series and its October price, so expanding the dataset does not move them.
   assert.equal(swing, -15.4, 'October production swing must be -15.4 kb');
   assert.equal(deltaM, -1.45, 'revenue delta must be -$1.45M');
-  assert.equal(
-    Number((rawRevenue / 1_000_000).toFixed(2)),
-    66.50,
-    'headline plan revenue must be $66.50M'
+
+  // The correction must not leak into any other series.
+  assert.equal(differing.length, 1, 'exactly one plan row may move');
+});
+
+test('ASPHALT plans at zero revenue because it has no price', () => {
+  const { rows } = buildPlan(loadInput());
+  const asphalt = rows.filter((r) => r.product === 'ASPHALT');
+  assert.ok(asphalt.length > 0, 'ASPHALT is planned — it has limits');
+  assert.ok(
+    asphalt.every((r) => r.price === 0 && r.revenue === 0),
+    'a product with no price contributes no revenue, which is what the cross-source rule catches'
   );
 });
