@@ -2,14 +2,19 @@
 
 Everything needed on the day. Print it or keep it on the second screen.
 
+**This runbook covers the version 1 app — the one that runs today.** Every beat below
+is against the three-pane build in `app/`. Version 2 replaces one of those beats and
+moves another; the delta is in **When version 2 ships**, at the end. Do not mix the two
+scripts. Until v2 is built, the script below is the demo.
+
 ---
 
 ## T-minus: pre-flight
 
 Run in order. If any step fails, the fallback is in **Failure playbook** below.
 
-```bash
-cd ~/Desktop/"new hackathon"/srop-app
+```powershell
+cd C:\Users\huawel\Desktop\Vibecoders\SROP-Demo
 
 npm run data            # 1. regenerates + verifies the CSVs. Must say "PASS - exactly the four planted defects"
 npm run check           # 2. typecheck + 16 tests. Must be 16/16
@@ -18,9 +23,23 @@ npm run probe:execute   # 4. live run. Want: 4 flags, Yanbu clean, wall time und
 npm run mock            # 5. refresh the fixture from that run
 ```
 
+⚠️ **Step 1 fails on this machine as written.** `npm run data` invokes `python3`, which
+does not resolve here — Windows answers with the Microsoft Store shim and exit code
+9009. The interpreter is on the path as `python` (3.13.5). Run the two scripts directly
+instead:
+
+```powershell
+python scripts/generate_data.py
+python scripts/check_data.py     # must say "PASS - exactly the four planted defects"
+```
+
+Or skip step 1 entirely. `data/` is committed, and `npm run check` proves the four
+defects are intact without regenerating anything. Do not "fix" `package.json` on demo
+day — verified 16/16 on 2026-08-07 with the data exactly as committed.
+
 **Then start both servers and leave them running:**
 
-```bash
+```powershell
 npm run dev             # terminal 1 — port 3000, LIVE. This is the demo.
 npm run demo:backup     # terminal 2 — port 3001, MOCK_MODE. Never touched unless 3000 dies.
 ```
@@ -60,6 +79,9 @@ table, trust the screen and adjust, don't argue with it.
 
 **The 3:05 beat is the demo.** If you are running long, cut 1:45–2:25 down to a single
 flag. Never cut the two-column table.
+
+> In version 2 this beat moves to 2:05 and the two-column table is gone. See
+> **When version 2 ships**. Nothing changes for the v1 demo.
 
 ### On the 0:25 line
 
@@ -108,3 +130,76 @@ Auth · stakeholder portal · real email delivery · draft-review loop · audit 
 the optimizer itself.
 
 *A team that knows exactly what it didn't build reads as a team that made choices.*
+
+---
+
+## When version 2 ships
+
+Everything above stays valid until the v2 build replaces `app/`. This section is the
+delta, so the script can be rewritten in one sitting rather than rediscovered. The full
+spec is [version2.md](version2.md).
+
+### The 3:05 table is gone, and the number moves earlier
+
+Version 1 ends on a two-column table comparing the plan as submitted against the plan
+after validation. Across ~32 rows, one row differs. It was retired in v2 because it
+answers a question the planner has already answered — he made every correction himself,
+one at a time, and approved each one.
+
+The arithmetic survives. It moves to the moment Y accepts a correction, where it is
+shown as one line on the confirmation step (version2.md §7.4):
+
+> Applying **25.8** changes October production at BP-JAZAN by **−15.4 kb** and plan
+> revenue by **−$1.45M**.
+
+**This is a better beat, not a lost one.** The money lands at the instant of the human
+decision instead of forty seconds later in a table, and it makes a sharper point: the
+platform tells the planner what a correction is worth *before* he commits it. The
+numbers are unchanged and `scripts/plan.test.mjs` still asserts them — test 16, green.
+
+Say it roughly like this, on the Accept click:
+
+> "Watch the confirmation. It doesn't just apply the fix — it tells him the fix is worth
+> **one and a half million dollars** before he clicks. That's the difference between
+> correcting data and understanding it."
+
+### What the plan screen shows instead
+
+Two tabs, both against real references (version2.md §7.6):
+
+- **Feasibility** — demand, production, capacity and utilization, closing inventory
+  against the min–max band, and shortfall. Sorted worst-first.
+- **Reasonableness** — planned against the 12-month baseline and against last cycle.
+
+Plus a headline strip counting rows with a shortfall and rows outside their band. On a
+healthy plan both read zero, which is itself the line to say: *"the check is that these
+are zero, and you can see at a glance that they are."*
+
+### New beats available
+
+v2 makes the whole cycle demonstrable, so the four minutes get rebalanced. Candidates,
+in rough priority:
+
+| Beat | Why it earns its time |
+|---|---|
+| Role switcher → a refinery uploads its own file | Kills the "where does the data come from" question before it is asked |
+| A silent stakeholder → reminder → escalation → assumed-data fallback | The escalation problem is the one Y described most vividly; nothing in v1 shows it |
+| Correction confirmation with the $1.45M line | The money beat, relocated |
+| Stakeholder rejects the draft with a comment → Y accepts → rerun → v2 issued | Closes the loop the v1 demo could only narrate |
+| Feasibility tab with a shortfall row | Proves the plan is being checked, not just produced |
+
+### What the closing line becomes
+
+The "did not build" list shrinks to the things that are still genuinely fake: real
+authentication, real file ingestion, real email delivery, SAP APIs, and the optimizer.
+Portal, draft-review loop, escalation and audit all move from *narrated* to *shown*.
+
+### Pre-flight changes
+
+- `npm run data` regenerates a larger set — four refineries, six bulk plants, six
+  products, eight planted defects. `check_data.py` must be updated to assert all eight.
+- `npm run check` will report more than 16 tests; the count in the pre-flight block
+  above needs updating to whatever the v2 suite lands on.
+- A cycle-state reset step is needed, since v2 persists to `data/state/`. A demo that
+  starts mid-cycle because the last rehearsal left state behind is the most likely new
+  failure mode, and it belongs in the failure playbook.
