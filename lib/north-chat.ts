@@ -3,35 +3,22 @@
  * Do not import from client components — token lives here only.
  */
 
-const DEFAULT_HOST = 'zhoom.democloud.cohere.com';
+import { llmEnabled, northHost, northIapHeaders, northToken } from '@/lib/llm-env';
+
 const TIMEOUT_MS = 15_000;
-
-function host(): string {
-  return process.env.NORTH_HOST || DEFAULT_HOST;
-}
-
-function token(): string | undefined {
-  return process.env.NORTH_TOKEN?.trim() || undefined;
-}
-
-function llmEnabled(): boolean {
-  if (process.env.LLM_ENABLED === '0') return false;
-  return Boolean(token());
-}
 
 function authHeaders(): Record<string, string> {
   const h: Record<string, string> = {
-    Authorization: `Bearer ${token()}`,
+    Authorization: `Bearer ${northToken()}`,
     'Content-Type': 'application/json',
   };
-  const iapHeader = process.env.NORTH_IAP_HEADER?.trim();
-  const iapToken = process.env.NORTH_IAP_TOKEN?.trim();
-  if (iapHeader && iapToken) h[iapHeader] = iapToken;
+  const iap = northIapHeaders();
+  if (iap) Object.assign(h, iap);
   return h;
 }
 
 function redact(text: string): string {
-  const t = token();
+  const t = northToken();
   return String(text)
     .replace(/Bearer\s+[\w.\-]+/gi, 'Bearer <redacted>')
     .replace(t ? new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g') : /$^/, '<redacted>');
@@ -95,7 +82,7 @@ export async function northChat(system: string, user: string): Promise<string | 
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    const res = await fetch(`https://${host()}/api/v1/chat`, {
+    const res = await fetch(`https://${northHost()}/api/v1/chat`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({
