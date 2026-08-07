@@ -1,0 +1,61 @@
+{
+  "flags": [
+    {
+      "id": "OSPAS_R1_JAZAN_DIESEL_2026-10",
+      "source": "OSPAS",
+      "file": "sub_demand.csv",
+      "rule": "HISTORICAL_DEVIATION",
+      "severity": "high",
+      "field": "demand_kb",
+      "rowRef": "refinery=JAZAN,bulk_plant=BP-JAZAN,product=DIESEL,month=2026-10",
+      "submittedValue": "41.2",
+      "evidence": "submitted 41.2 kb vs 12-month mean 25.1 kb (+64%)",
+      "plainEnglish": "Demand for DIESEL at JAZAN refinery in October 2026 is 64% higher than the 12-month historical average, exceeding the 40% threshold.",
+      "status": "open"
+    },
+    {
+      "id": "OSPAS_R4_JAZAN_LPG-95_2026-11",
+      "source": "OSPAS",
+      "file": "sub_demand.csv",
+      "rule": "UNKNOWN_ENTITY",
+      "severity": "medium",
+      "field": "product",
+      "rowRef": "refinery=JAZAN,bulk_plant=BP-JAZAN,product=LPG-95,month=2026-11",
+      "submittedValue": "6.4",
+      "evidence": "submitted product LPG-95 (demand 6.4 kb) not found in reference limits",
+      "plainEnglish": "Product LPG-95 submitted for JAZAN refinery is not defined in the reference limits.",
+      "status": "open"
+    },
+    {
+      "id": "Demand_Planning_R3_JET-A1_2026-11",
+      "source": "Demand Planning",
+      "file": "sub_prices.csv",
+      "rule": "ZERO_OR_MISSING",
+      "severity": "medium",
+      "field": "price_usd",
+      "rowRef": "product=JET-A1,month=2026-11",
+      "submittedValue": "0.0",
+      "evidence": "submitted price 0.0 for JET-A1 in November 2026",
+      "plainEnglish": "Price for JET-A1 in November 2026 is submitted as 0.0, which is invalid.",
+      "status": "open"
+    },
+    {
+      "id": "Refinery_JAZAN_R2_GASOLINE-91",
+      "source": "Refinery JAZAN",
+      "file": "sub_inv_jazan.csv",
+      "rule": "LIMIT_BREACH",
+      "severity": "high",
+      "field": "opening_inventory_kb",
+      "rowRef": "bulk_plant=BP-JAZAN,product=GASOLINE-91",
+      "submittedValue": "31.4",
+      "evidence": "submitted opening inventory 31.4 kb exceeds max level 27.0 kb for GASOLINE-91 at JAZAN",
+      "plainEnglish": "Opening inventory for GASOLINE-91 at JAZAN refinery exceeds the maximum allowed level of 27.0 kb.",
+      "status": "open"
+    }
+  ],
+  "cleanSources": [
+    "Refinery YANBU"
+  ],
+  "summary": "Validation identified 4 flags: 1 high-severity historical deviation in demand for JAZAN DIESEL (Oct 2026), 1 medium-severity unknown product (LPG-95) in JAZAN demand, 1 medium-severity zero price for JET-A1 (Nov 2026), and 1 high-severity inventory limit breach for JAZAN GASOLINE-91. The YANBU inventory submission was clean.",
+  "emails": {}
+}

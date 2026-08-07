@@ -1,0 +1,26 @@
+{
+  "HISTORICAL_DEVIATION": {
+    "from": "OSPAS",
+    "reply": "Checked against our dispatch log - 41.2 was a transcription error. Correct figure for JAZAN DIESEL October is 25.8 kb.",
+    "correctedValue": 25.8,
+    "movesThePlan": true
+  },
+  "LIMIT_BREACH": {
+    "from": "Refinery JAZAN",
+    "reply": "Confirmed intentional. GASOLINE-91 is running an approved temporary over-fill under waiver TW-2026-114 ahead of the Q4 turnaround.",
+    "correctedValue": null,
+    "movesThePlan": false
+  },
+  "ZERO_OR_MISSING": {
+    "from": "Demand Planning",
+    "reply": "Confirmed intentional. No JET-A1 term pricing published for November - scheduled shutdown, no liftings expected.",
+    "correctedValue": null,
+    "movesThePlan": false
+  },
+  "UNKNOWN_ENTITY": {
+    "from": "OSPAS",
+    "reply": "Confirmed intentional. LPG-95 is a new grade approved for JAZAN; it has not been added to the reference limits file yet.",
+    "correctedValue": null,
+    "movesThePlan": false
+  }
+}
