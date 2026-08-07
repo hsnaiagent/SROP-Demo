@@ -10,13 +10,27 @@
  */
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 import { CYCLE_STATUS_LABEL } from '@/lib/types';
 
 import { useCycle, PLANNER } from '../providers';
 import { Badge, Spinner } from './ui';
+
+/** Routes that only make sense for the planner. */
+const PLANNER_ONLY = new Set([
+  '/requests',
+  '/submissions',
+  '/validation',
+  '/dashboard',
+  '/plan',
+  '/draft-review',
+  '/history',
+]);
+
+/** Routes that only make sense for a stakeholder. */
+const STAKEHOLDER_ONLY = new Set(['/submit', '/review']);
 
 interface NavEntry {
   href: string;
@@ -31,12 +45,26 @@ interface NavEntry {
 export default function Shell({ children }: { children: React.ReactNode }) {
   const { cycle, reference, role, setRole, isPlanner, loading, error, message, clearMessage } = useCycle();
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     if (!message) return;
     const t = setTimeout(clearMessage, 6000);
     return () => clearTimeout(t);
   }, [message, clearMessage]);
+
+  // The role switcher only changes who you are — it does not change the URL. Without
+  // this, switching away from the planner on /requests leaves that page on screen until
+  // something in the new nav is clicked.
+  useEffect(() => {
+    if (isPlanner && STAKEHOLDER_ONLY.has(pathname)) {
+      router.replace('/');
+      return;
+    }
+    if (!isPlanner && PLANNER_ONLY.has(pathname)) {
+      router.replace('/');
+    }
+  }, [isPlanner, pathname, router]);
 
   const identities = [PLANNER, ...(reference?.stakeholders.filter((s) => s.kind !== 'planner').map((s) => s.name) ?? [])];
 
