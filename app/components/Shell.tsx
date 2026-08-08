@@ -246,9 +246,9 @@ function plannerNav(cycle: CycleRecord | null): NavEntry[] {
     },
     {
       href: '/validation',
-      label: 'Validation',
+      label: 'Data Checker',
       phase: 3,
-      block: noCycle ?? (cycle!.flags.length > 0 ? null : 'Run validation on the Submissions screen'),
+      block: noCycle ?? (cycle!.flags.length > 0 ? null : 'Run the Data Checker on the Submissions screen'),
       badge: flags.length > 0 ? { count: flags.length, tone: 'bad' } : null,
       done: Boolean(cycle && cycle.flags.length > 0 && flags.length === 0),
     },

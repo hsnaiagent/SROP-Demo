@@ -17,10 +17,10 @@ const SYSTEM_PROMPTS: Record<PolishMode, string> = {
   review_chat:
     `You help a refinery or department stakeholder review a draft SROP plan. ${SHARED_RULES}`,
   planner_chat:
-    `You are the SROP planning orchestrator assistant. ${SHARED_RULES}`,
+    `You are the SROP Request Assistant. ${SHARED_RULES}`,
   stakeholder_email:
     `You write realistic emails from an SROP planning team to stakeholders requesting monthly data. ` +
-    `Read the full planner-orchestrator conversation — the latest message may revise earlier instructions ` +
+    `Read the full planner–Request Assistant conversation — the latest message may revise earlier instructions ` +
     `(e.g. "remove the emergency for Yanbu" cancels an earlier urgency ask). ` +
     `Each email must reflect the current intent for that recipient across the whole thread, not only the last line. ` +
     `Replace template boilerplate and awkward bullets with natural wording. ` +

@@ -132,7 +132,7 @@ export default function PlanPage() {
       >
         {!g1.open && (
           <Banner tone="warn" title={`Gate 1 is closed — ${g1.reason}`} actions={
-            <Link href="/validation"><Button size="sm">Go to validation</Button></Link>
+            <Link href="/validation"><Button size="sm">Go to Data Checker</Button></Link>
           }>
             Only validated data enters the workbook: every value must be clean, justified,
             corrected, or explicitly assumed.
@@ -240,7 +240,7 @@ export default function PlanPage() {
         {!g2.open && !draft && (
           <p className="text-sm text-text-muted">
             {g1.open
-              ? 'Build the workbook and approve it for the run. Building and running are separate acts on purpose — the Intake Agent never triggers the model on its own.'
+              ? 'Build the workbook and approve it for the run. Building and running are separate acts on purpose — the Workbook Builder never triggers the model on its own.'
               : `Resolve all ${cycle.flags.length} flags to run — ${g1.reason}.`}
           </p>
         )}

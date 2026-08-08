@@ -262,7 +262,7 @@ function apply(
     case 'submit': {
       const source = String(p.source);
       const names = receiveSubmission(c, actor, source, String(p.note ?? ''));
-      result.message = `Received ${names.join(', ')}. Validation runs next.`;
+      result.message = `Received ${names.join(', ')}. Data Checker runs next.`;
       return;
     }
 
@@ -270,7 +270,7 @@ function apply(
       const source = String(p.source);
       const sub = c.submissions.find((s) => s.source === source);
       if (!sub) throw new Error(`${source} was not asked for anything this cycle`);
-      if (sub.versions.length > 0) throw new Error(`${source} already received — use Validate`);
+      if (sub.versions.length > 0) throw new Error(`${source} already received — use Check data`);
 
       const names = receiveSubmission(c, actor, source, 'demo fixture');
       runValidationSources(c, [source], result);

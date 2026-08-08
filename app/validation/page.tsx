@@ -51,7 +51,7 @@ export default function ValidationPage() {
 
   if (!cycle) {
     return (
-      <Screen title="Validation">
+      <Screen title="Data Checker">
         <EmptyState title="No cycle open">Start a new cycle from Requests.</EmptyState>
       </Screen>
     );
@@ -89,9 +89,9 @@ export default function ValidationPage() {
 
   if (live.length === 0) {
     return (
-      <Screen title="Validation">
-        <EmptyState title="Nothing validated yet">
-          Run validation from the Submissions screen. Each source is validated independently.
+      <Screen title="Data Checker">
+        <EmptyState title="Nothing checked yet">
+          Run the Data Checker from the Submissions screen. Each source is checked independently.
         </EmptyState>
       </Screen>
     );
@@ -99,7 +99,7 @@ export default function ValidationPage() {
 
   return (
     <Screen
-      title="Validation"
+      title="Data Checker"
       lede={
         <>
           <span className="font-mono text-text">
@@ -317,7 +317,7 @@ function FlagCard({
       subject: `SROP query — ${RULE_LABEL[flag.rule]} in ${flag.file}`,
       body:
         `Hello ${flag.source},\n\n` +
-        `Validation flagged one value in your submission and we would like to confirm it before ` +
+        `The Data Checker flagged one value in your submission and we would like to confirm it before ` +
         `it goes into the plan.\n\n` +
         `  Row:      ${prettyRowRef(flag.rowRef)}\n` +
         `  Field:    ${flag.field}\n` +

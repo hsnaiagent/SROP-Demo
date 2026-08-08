@@ -71,10 +71,10 @@ export default function SubmitPage() {
       {latest && (
         <Banner tone="good" title={`Received — version ${latest.n}`}>
           {latest.files.map((f) => `${f.name} (${f.rowCount} rows)`).join(', ')}, {relTime(latest.receivedAt)}.
-          {submission.status === 'clean' && ' Validation found no issues.'}
+          {submission.status === 'clean' && ' The Data Checker found no issues.'}
           {submission.status === 'flagged' &&
-            ` Validation raised ${flags.length} question${flags.length === 1 ? '' : 's'} — see below.`}
-          {submission.status === 'submitted' && ' Validation is queued.'}
+            ` The Data Checker raised ${flags.length} question${flags.length === 1 ? '' : 's'} — see below.`}
+          {submission.status === 'submitted' && ' The Data Checker is queued.'}
         </Banner>
       )}
 
@@ -135,7 +135,7 @@ export default function SubmitPage() {
 
       {/* Validation results, read-only, with the same evidence line the planner sees. */}
       {flags.length > 0 && (
-        <Card title="What validation found" subtitle="The same evidence the planner sees">
+        <Card title="What the Data Checker found" subtitle="The same evidence the planner sees">
           <div className="flex flex-col gap-3">
             {flags.map((flag) => (
               <div

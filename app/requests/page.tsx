@@ -60,7 +60,7 @@ async function polishText(
 function formatChatHistory(chat: ChatMessage[]): string {
   return chat
     .slice(-14)
-    .map((m) => `${m.role === 'planner' ? 'Planner' : 'Orchestrator'}: ${m.text}`)
+    .map((m) => `${m.role === 'planner' ? 'Planner' : 'Request Assistant'}: ${m.text}`)
     .join('\n');
 }
 
@@ -154,13 +154,13 @@ export default function RequestsPage() {
     return (
       <Screen
         title="Requests"
-        lede="No cycle is open. Start one to set the four-month planning horizon and open the orchestrator chat."
+        lede="No cycle is open. Start one to set the four-month planning horizon and open the Request Assistant chat."
       >
         <Card tone="accent">
           <div className="flex flex-col items-start gap-4 py-4">
             <p className="max-w-xl text-sm leading-relaxed text-text-muted">
               One cycle covers one issue of the SROP and always plans four months ahead. The
-              orchestrator will draft data requests for OSPAS, Demand Planning and all four
+              Request Assistant will draft data requests for OSPAS, Demand Planning and all four
               refineries — nothing is sent until you review them.
             </p>
             <Button tone="primary" onClick={() => act('create_cycle')} disabled={busy !== null}>
@@ -250,7 +250,7 @@ export default function RequestsPage() {
   return (
     <Screen
       title="Requests"
-      lede="Describe what you need and who from. The orchestrator drafts it; nothing is sent until you review it."
+      lede="Describe what you need and who from. The Request Assistant drafts it; nothing is sent until you review it."
       actions={
         <div className="flex flex-wrap items-center gap-2">
           {!sent && (
@@ -295,7 +295,7 @@ export default function RequestsPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.3fr]">
         {/* ------------------------------------------------------------ chat */}
         <Card
-          title="Orchestrator"
+          title="Request Assistant"
           subtitle="What do you need this cycle, and from whom?"
           actions={
             !sent && (
@@ -310,7 +310,7 @@ export default function RequestsPage() {
               {cycle.chat.length === 0 && (
                 <p className="text-sm leading-relaxed text-text-muted">
                   Type what you need below, or load last cycle&apos;s request log and adjust it. The
-                  orchestrator compares whatever you say against the previous cycle, so anything you
+                  Request Assistant compares whatever you say against the previous cycle, so anything you
                   routinely ask for but have not mentioned is still included.
                 </p>
               )}
@@ -324,7 +324,7 @@ export default function RequestsPage() {
                   }`}
                 >
                   <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-text-muted">
-                    {msg.role === 'planner' ? 'You' : 'Orchestrator'}
+                    {msg.role === 'planner' ? 'You' : 'Request Assistant'}
                   </span>
                   {polishedReplies[msg.id] ?? msg.text}
                 </div>
@@ -369,7 +369,7 @@ export default function RequestsPage() {
         <div className="flex flex-col gap-3">
           {cycle.requests.length === 0 ? (
             <EmptyState title="No requests drafted yet" placeholder>
-              Tell the orchestrator what you need, or load last cycle&apos;s log.
+              Tell the Request Assistant what you need, or load last cycle&apos;s log.
             </EmptyState>
           ) : (
             cycle.requests.map((req) => (

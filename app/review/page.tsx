@@ -325,7 +325,7 @@ export default function ReviewPage() {
                   </Button>
                 </div>
                 {verdict && (
-                  <Banner tone="warn" title="File-Recognition Agent">
+                  <Banner tone="warn" title="Update Screener">
                     {verdict}
                   </Banner>
                 )}

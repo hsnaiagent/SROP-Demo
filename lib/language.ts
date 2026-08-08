@@ -99,7 +99,7 @@ export function flagQueryEmail(flag: Flag, s: Stakeholder | undefined): EmailDra
     subject: `SROP query — ${RULE_LABEL[flag.rule]} in ${flag.file}`,
     body:
       `Hello ${flag.source},\n\n` +
-      `Validation flagged one value in your submission and we would like to confirm it ` +
+      `The Data Checker flagged one value in your submission and we would like to confirm it ` +
       `before it goes into the plan.\n\n` +
       `  Row:      ${prettyRowRef(flag.rowRef)}\n` +
       `  Field:    ${flag.field}\n` +
@@ -121,7 +121,7 @@ export function bulkQueryEmail(flags: Flag[], s: Stakeholder | undefined): Email
     subject: `SROP query — ${flags.length} values to confirm in ${flags[0].file}`,
     body:
       `Hello ${flags[0].source},\n\n` +
-      `Validation flagged ${flags.length} values in your submission. Rather than send you ` +
+      `The Data Checker flagged ${flags.length} values in your submission. Rather than send you ` +
       `${flags.length} separate emails, they are all below.\n\n${rows}\n\n` +
       `For each one, either confirm it is intentional or reply with the corrected value.` +
       signature,

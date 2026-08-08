@@ -54,19 +54,19 @@ export default function SubmissionsPage() {
   return (
     <Screen
       title="Submissions"
-      lede={`${received.length} of ${cycle.submissions.length} received. Validation runs one instance per source, in parallel — a failure on one leaves the rest untouched.`}
+      lede={`${received.length} of ${cycle.submissions.length} received. The Data Checker runs one instance per source, in parallel — a failure on one leaves the rest untouched.`}
       actions={
         <div className="flex flex-wrap items-center gap-2">
           {awaitingReceive.length > 0 && (
             <Button
               tone="primary"
               disabled={busy !== null}
-              title="Demo shortcut: attach fixture files and run validation for every source still waiting"
+              title="Demo shortcut: attach fixture files and run the Data Checker for every source still waiting"
               onClick={() => act('receive_and_validate_all')}
             >
               {busy === 'receive_and_validate_all'
                 ? 'Receiving…'
-                : `Receive & validate all (${awaitingReceive.length})`}
+                : `Receive & check all (${awaitingReceive.length})`}
             </Button>
           )}
           <Button
@@ -75,12 +75,12 @@ export default function SubmissionsPage() {
             onClick={() => act('validate')}
           >
             {validating && busy === 'validate'
-              ? 'Validating…'
+              ? 'Checking…'
               : unvalidated.length === 0
                 ? received.length > 0
-                  ? 'All validated'
-                  : 'Nothing to validate'
-                : `Validate ${unvalidated.length} received`}
+                  ? 'All checked'
+                  : 'Nothing to check'
+                : `Check ${unvalidated.length} received`}
           </Button>
         </div>
       }
@@ -188,9 +188,9 @@ function SourceCard({
                 tone="primary"
                 disabled={busy !== null}
                 onClick={() => act('receive_and_validate', { source: submission.source })}
-                title="Demo shortcut: attach the fixture file and run validation for this source"
+                title="Demo shortcut: attach the fixture file and run the Data Checker for this source"
               >
-                {receiving ? 'Receiving…' : 'Receive & validate'}
+                {receiving ? 'Receiving…' : 'Receive & check'}
               </Button>
               {submission.daysWaiting >= 7 && (
                 <Button
@@ -219,7 +219,7 @@ function SourceCard({
               disabled={busy !== null}
               onClick={() => act('validate', { source: submission.source })}
             >
-              Validate
+              Check data
             </Button>
           )}
 
