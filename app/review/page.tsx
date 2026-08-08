@@ -218,8 +218,8 @@ export default function ReviewPage() {
           <ul className="flex flex-col gap-2">
             {draft.changesFromPrevious.map((c) => (
               <li key={c.rowRef} className="flex flex-wrap items-baseline gap-2 text-sm">
-                <span className="font-mono text-xs text-zinc-400">{prettyRef(c.rowRef)}</span>
-                <span className="font-mono text-zinc-100">
+                <span className="font-mono text-xs text-text-muted">{prettyRef(c.rowRef)}</span>
+                <span className="font-mono text-text">
                   {c.before} → {c.after} kb
                 </span>
                 <Badge tone="info">{c.causedBy}</Badge>
@@ -246,7 +246,7 @@ export default function ReviewPage() {
             </div>
 
             {mode === 'comment' && (
-              <div className="flex flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-4">
+              <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
                 <Field label="Which row is wrong">
                   <Select
                     value={rowRef}
@@ -296,18 +296,18 @@ export default function ReviewPage() {
             )}
 
             {mode === 'update' && (
-              <div className="flex flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-4">
-                <p className="text-sm leading-relaxed text-zinc-300">
+              <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+                <p className="text-sm leading-relaxed text-text">
                   Upload a changed file. Before it reaches the planner, it is checked against what
                   you own and against your own limits — and you are told the result first.
                 </p>
-                <div className="rounded-lg border border-dashed border-zinc-700 px-5 py-6 text-center">
-                  <p className="text-sm text-zinc-400">
+                <div className="rounded-lg border border-dashed border-border px-5 py-6 text-center">
+                  <p className="text-sm text-text-muted">
                     {me?.name === 'Refinery RABIGH'
                       ? 'RABIGH_tank_levels_rev2.xlsx'
                       : 'Drop your revised file here'}
                   </p>
-                  <p className="mt-1 text-xs text-zinc-500">
+                  <p className="mt-1 text-xs text-text-muted">
                     Demo: the scripted revision for {role} is used.
                   </p>
                 </div>
@@ -334,8 +334,8 @@ export default function ReviewPage() {
 
             {/* The chat reaches the same three outcomes, and never files without a
                 confirmation step. */}
-            <details className="rounded-lg border border-zinc-800 bg-zinc-950/40 px-4 py-3">
-              <summary className="cursor-pointer text-sm font-medium text-zinc-400">
+            <details className="rounded-lg border border-border bg-surface px-4 py-3">
+              <summary className="cursor-pointer text-sm font-medium text-text-muted">
                 Or just tell the assistant what is wrong
               </summary>
               <div className="mt-3 flex flex-col gap-3">
@@ -343,7 +343,7 @@ export default function ReviewPage() {
                   <div
                     key={i}
                     className={`rounded-lg px-3 py-2 text-sm ${
-                      m.role === 'me' ? 'ml-8 bg-amber-500/10 text-amber-50' : 'mr-4 bg-zinc-900 text-zinc-200'
+                      m.role === 'me' ? 'ml-8 bg-blue-accent/10 text-text' : 'mr-4 bg-surface-2 text-text'
                     }`}
                   >
                     {m.text}
@@ -368,8 +368,8 @@ export default function ReviewPage() {
         </Card>
       )}
 
-      <details className="rounded-xl border border-zinc-800 bg-zinc-900/30 px-5 py-3">
-        <summary className="cursor-pointer text-sm font-medium text-zinc-400">
+      <details className="rounded-xl border border-border bg-surface-2/30 px-5 py-3">
+        <summary className="cursor-pointer text-sm font-medium text-text-muted">
           Full draft — all {draft.planRows.length} rows
         </summary>
         <div className="mt-3">

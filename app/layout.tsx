@@ -1,12 +1,26 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { IBM_Plex_Mono, IBM_Plex_Sans, Space_Grotesk } from 'next/font/google';
 
 import Shell from './components/Shell';
-import { CycleProvider } from './providers';
+import { CycleProvider, ThemeProvider } from './providers';
 import './globals.css';
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
+const spaceGrotesk = Space_Grotesk({
+  variable: '--font-display',
+  subsets: ['latin'],
+});
+
+const ibmPlexSans = IBM_Plex_Sans({
+  variable: '--font-body',
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: '--font-mono',
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+});
 
 export const metadata: Metadata = {
   title: 'SROP Platform',
@@ -17,13 +31,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${spaceGrotesk.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable} h-full antialiased dark`}
       suppressHydrationWarning
     >
-      <body className="min-h-full bg-zinc-950 text-zinc-100">
-        <CycleProvider>
-          <Shell>{children}</Shell>
-        </CycleProvider>
+      <body className="min-h-full bg-bg font-body text-text">
+        <ThemeProvider>
+          <CycleProvider>
+            <Shell>{children}</Shell>
+          </CycleProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

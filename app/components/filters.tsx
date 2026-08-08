@@ -16,7 +16,7 @@ import type { Filters, PivotView, PlanRow } from '@/lib/types';
 import { EMPTY_FILTERS, NO_FILTER, PIVOT_LABEL } from '@/lib/types';
 
 import { createLocalStore, useLocalStore } from '../lib/local-store';
-import { Field, Select } from './ui';
+import { Chip, Field, Select } from './ui';
 
 const filterStore = createLocalStore<Filters>('srop.filters', EMPTY_FILTERS);
 
@@ -77,59 +77,108 @@ export function FilterBar({
     ...[...new Set(rows.map((r) => r[key]))].sort().map((v) => ({ value: v, label: v })),
   ];
 
-  return (
-    <div className="flex flex-wrap items-end gap-4">
-      <Field label="Refinery">
-        <Select
-          value={filters.refinery}
-          onChange={(v) => update({ refinery: v, bulkPlant: NO_FILTER })}
-          options={opts('refinery', 'All refineries')}
-        />
-      </Field>
-      <Field label="Bulk plant">
-        <Select
-          value={filters.bulkPlant}
-          onChange={(v) => update({ bulkPlant: v })}
-          options={opts(
-            'bulkPlant',
-            'All plants'
-          )}
-        />
-      </Field>
-      <Field label="Product">
-        <Select
-          value={filters.product}
-          onChange={(v) => update({ product: v })}
-          options={opts('product', 'All products')}
-        />
-      </Field>
-      <Field label="Month">
-        <Select
-          value={filters.month}
-          onChange={(v) => update({ month: v })}
-          options={opts('month', 'All months')}
-        />
-      </Field>
+  const productOptions = [...new Set(rows.map((r) => r.product))].sort();
+  const monthOptions = [...new Set(rows.map((r) => r.month))].sort();
 
-      {view && onView && views && (
-        <Field label="View">
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end gap-4">
+        <Field label="Refinery">
           <Select
-            value={view}
-            onChange={(v) => onView(v as PivotView)}
-            options={views.map((v) => ({ value: v, label: PIVOT_LABEL[v] }))}
+            value={filters.refinery}
+            onChange={(v) => update({ refinery: v, bulkPlant: NO_FILTER })}
+            options={opts('refinery', 'All refineries')}
           />
         </Field>
-      )}
+        <Field label="Bulk plant">
+          <Select
+            value={filters.bulkPlant}
+            onChange={(v) => update({ bulkPlant: v })}
+            options={opts(
+              'bulkPlant',
+              'All plants'
+            )}
+          />
+        </Field>
+        {productOptions.length <= 6 ? (
+          <Field label="Product">
+            <div className="flex flex-wrap gap-1.5">
+              <Chip
+                active={filters.product === NO_FILTER}
+                onClick={() => update({ product: NO_FILTER })}
+              >
+                All
+              </Chip>
+              {productOptions.map((p) => (
+                <Chip
+                  key={p}
+                  active={filters.product === p}
+                  onClick={() => update({ product: p })}
+                >
+                  {p}
+                </Chip>
+              ))}
+            </div>
+          </Field>
+        ) : (
+          <Field label="Product">
+            <Select
+              value={filters.product}
+              onChange={(v) => update({ product: v })}
+              options={opts('product', 'All products')}
+            />
+          </Field>
+        )}
+        {monthOptions.length <= 6 ? (
+          <Field label="Month">
+            <div className="flex flex-wrap gap-1.5">
+              <Chip
+                active={filters.month === NO_FILTER}
+                onClick={() => update({ month: NO_FILTER })}
+              >
+                All
+              </Chip>
+              {monthOptions.map((m) => (
+                <Chip
+                  key={m}
+                  active={filters.month === m}
+                  onClick={() => update({ month: m })}
+                >
+                  {m}
+                </Chip>
+              ))}
+            </div>
+          </Field>
+        ) : (
+          <Field label="Month">
+            <Select
+              value={filters.month}
+              onChange={(v) => update({ month: v })}
+              options={opts('month', 'All months')}
+            />
+          </Field>
+        )}
 
-      {active > 0 && (
-        <button
-          type="button"
-          onClick={reset}
-          className="mb-0.5 text-xs text-zinc-400 underline decoration-dotted hover:text-zinc-200"
-        >
-          clear {active} filter{active === 1 ? '' : 's'}
-        </button>
-      )}
+        {view && onView && views && (
+          <Field label="View">
+            <Select
+              value={view}
+              onChange={(v) => onView(v as PivotView)}
+              options={views.map((v) => ({ value: v, label: PIVOT_LABEL[v] }))}
+            />
+          </Field>
+        )}
+
+        {active > 0 && (
+          <button
+            type="button"
+            onClick={reset}
+            className="mb-0.5 text-xs text-text-muted underline decoration-dotted hover:text-text"
+          >
+            clear {active} filter{active === 1 ? '' : 's'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

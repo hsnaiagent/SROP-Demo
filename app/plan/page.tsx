@@ -106,7 +106,7 @@ export default function PlanPage() {
               <a
                 href="/api/master"
                 download={`SROP_master_${cycle.id}.csv`}
-                className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-100 hover:border-zinc-500"
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text hover:border-blue-accent/50"
               >
                 Download
               </a>
@@ -151,7 +151,7 @@ export default function PlanPage() {
               {master.sheets.map((s) => (
                 <Row key={s.name}>
                   <Cell>
-                    <span className="font-medium text-zinc-100">{s.name}</span>
+                    <span className="font-medium text-text">{s.name}</span>
                   </Cell>
                   <Cell right mono tone="muted">
                     {s.rowCount}
@@ -163,7 +163,7 @@ export default function PlanPage() {
                     <button
                       type="button"
                       onClick={() => setSheet(sheet === s.name ? null : s.name)}
-                      className="text-xs text-zinc-400 underline decoration-dotted hover:text-zinc-200"
+                      className="text-xs text-text-muted underline decoration-dotted hover:text-text"
                     >
                       {sheet === s.name ? 'hide' : 'preview'}
                     </button>
@@ -173,15 +173,15 @@ export default function PlanPage() {
             </Table>
 
             {sheet && (
-              <div className="overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-950/60 p-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <div className="overflow-x-auto rounded-lg border border-border bg-surface p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
                   {sheet} — first 10 rows
                 </p>
                 <table className="text-xs">
                   <thead>
                     <tr>
                       {master.sheets.find((s) => s.name === sheet)!.columns.map((c) => (
-                        <th key={c} className="px-2 py-1 text-left font-semibold text-zinc-500">
+                        <th key={c} className="px-2 py-1 text-left font-semibold text-text-muted">
                           {c}
                         </th>
                       ))}
@@ -192,9 +192,9 @@ export default function PlanPage() {
                       .find((s) => s.name === sheet)!
                       .rows.slice(0, 10)
                       .map((r, i) => (
-                        <tr key={i} className="border-t border-zinc-800/60">
+                        <tr key={i} className="border-t border-border/60">
                           {r.map((cellValue, j) => (
-                            <td key={j} className="px-2 py-1 font-mono tabular-nums text-zinc-300">
+                            <td key={j} className="px-2 py-1 font-mono tabular-nums text-text">
                               {cellValue}
                             </td>
                           ))}
@@ -238,7 +238,7 @@ export default function PlanPage() {
         }
       >
         {!g2.open && !draft && (
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-text-muted">
             {g1.open
               ? 'Build the workbook and approve it for the run. Building and running are separate acts on purpose — the Intake Agent never triggers the model on its own.'
               : `Resolve all ${cycle.flags.length} flags to run — ${g1.reason}.`}
@@ -285,8 +285,8 @@ export default function PlanPage() {
                 <ul className="flex flex-col gap-1.5">
                   {draft.changesFromPrevious.map((change) => (
                     <li key={change.rowRef} className="flex flex-wrap items-baseline gap-2 text-sm">
-                      <span className="font-mono text-xs text-zinc-400">{prettyRef(change.rowRef)}</span>
-                      <span className="font-mono text-zinc-100">
+                      <span className="font-mono text-xs text-text-muted">{prettyRef(change.rowRef)}</span>
+                      <span className="font-mono text-text">
                         {change.before} → {change.after} kb
                       </span>
                       <Badge tone="info">{change.causedBy}</Badge>
@@ -321,19 +321,19 @@ export default function PlanPage() {
                       <div
                         key={series.key}
                         className={`rounded-lg border px-4 py-3 ${
-                          decided ? 'border-zinc-800 bg-zinc-950/50' : 'border-amber-900/60 bg-amber-500/[0.05]'
+                          decided ? 'border-border bg-surface' : 'border-warn/40 bg-warn/[0.05]'
                         }`}
                       >
                         <p className="text-sm">
-                          <span className="font-semibold text-zinc-100">
+                          <span className="font-semibold text-text">
                             {series.product} · {series.bulkPlant} · {series.refinery}
                           </span>{' '}
-                          — <span className="font-mono text-amber-200">{fmtKb(series.demandKb)}</span> of
+                          — <span className="font-mono text-warn">{fmtKb(series.demandKb)}</span> of
                           demand across {series.months.join(', ')} is not planned. No min, max or
                           capacity exists for this series.
                         </p>
                         {decided ? (
-                          <p className="mt-1.5 text-xs text-zinc-400">
+                          <p className="mt-1.5 text-xs text-text-muted">
                             Exclusion confirmed by {decision!.decidedBy} — &ldquo;{decision!.reason}
                             &rdquo;. Stakeholders see this reason on the draft.
                           </p>
@@ -444,7 +444,7 @@ function PlanReview({
         />
       </Card>
 
-      <p className="text-xs leading-relaxed text-zinc-500">
+      <p className="text-xs leading-relaxed text-text-muted">
         {tab === 'feasibility'
           ? 'Can this plan be executed, and does it serve the demand? Worst rows first — a red edge is a shortfall or a tank below minimum, amber is above maximum or above 95% utilization.'
           : 'Is this plan plausible against what has happened before? This catches a plan that is perfectly feasible and still wrong — every constraint satisfied, but a series quietly running at twice its history.'}

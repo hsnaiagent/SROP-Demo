@@ -25,8 +25,39 @@ import { createLocalStore, useLocalStore } from './lib/local-store';
 
 export const PLANNER = 'Y - SROP Planner';
 
+type Theme = 'light' | 'dark';
+
+const themeStore = createLocalStore<Theme>('srop.theme', 'dark');
+
 /** Who you are viewing as. External state, so it is read through the store. */
 const roleStore = createLocalStore<string>('srop.role', PLANNER);
+
+const ThemeContext = createContext<{
+  theme: Theme;
+  toggleTheme: () => void;
+} | null>(null);
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setTheme] = useLocalStore(themeStore);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  }, [theme, setTheme]);
+
+  const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
+export function useTheme() {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used inside ThemeProvider');
+  return ctx;
+}
 
 interface ActResult {
   ok: boolean;

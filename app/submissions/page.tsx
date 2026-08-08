@@ -24,6 +24,7 @@ import {
   EmptyState,
   Grid,
   Screen,
+  Spinner,
   relTime,
 } from '../components/ui';
 
@@ -148,13 +149,13 @@ function SourceCard({
             {latest.files.map((file) => (
               <div key={file.name} className="flex flex-col gap-1">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="truncate font-mono text-xs text-zinc-200">{file.name}</span>
+                  <span className="truncate font-mono text-xs text-text">{file.name}</span>
                   <Badge>{file.kind}</Badge>
                 </div>
-                <span className="font-mono text-xs text-zinc-500">
+                <span className="font-mono text-xs text-text-muted">
                   {file.rowCount} rows · {file.sizeKb} kb · {relTime(latest.receivedAt)}
                 </span>
-                <span className="truncate font-mono text-[11px] text-zinc-600" title={file.columns.join(', ')}>
+                <span className="truncate font-mono text-[11px] text-text-muted/70" title={file.columns.join(', ')}>
                   {file.columns.join(' · ')}
                 </span>
               </div>
@@ -168,15 +169,15 @@ function SourceCard({
             {submission.assumed && (
               <Badge tone="warn">assumed — carried from cycle 2026-08</Badge>
             )}
-            {latest.note && <p className="text-xs italic text-zinc-400">&ldquo;{latest.note}&rdquo;</p>}
+            {latest.note && <p className="text-xs italic text-text-muted">&ldquo;{latest.note}&rdquo;</p>}
             {submission.crossSourcePending && (
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-text-muted">
                 Cross-source checks pending — waiting on another source to arrive.
               </p>
             )}
           </>
         ) : (
-          <p className="font-mono text-xs text-zinc-500">{slaLabel(submission, request)}</p>
+          <p className="font-mono text-xs text-text-muted">{slaLabel(submission, request)}</p>
         )}
 
         <div className="flex flex-wrap gap-2">
@@ -247,10 +248,10 @@ function StatusMark({
   spinning: boolean;
 }) {
   if (spinning) {
-    return <span className="inline-block size-3 animate-spin rounded-full border-2 border-zinc-700 border-t-amber-400" />;
+    return <Spinner className="size-3" />;
   }
   if (submission.assumed) return <Badge tone="warn">assumed</Badge>;
-  if (submission.status === 'clean') return <span className="text-emerald-400">✓</span>;
+  if (submission.status === 'clean') return <span className="text-green-accent">✓</span>;
   if (submission.status === 'flagged') {
     return <Badge tone="bad" mono>{flagCount}</Badge>;
   }

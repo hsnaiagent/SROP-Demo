@@ -102,7 +102,7 @@ export default function ValidationPage() {
       title="Validation"
       lede={
         <>
-          <span className="font-mono text-zinc-300">
+          <span className="font-mono text-text">
             {open.length} of {live.length} flags open
           </span>
           . Every flag carries the submitted number and the number it was compared against — the
@@ -161,7 +161,7 @@ export default function ValidationPage() {
 
           {canBulk && (
             <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs text-zinc-400">{selectedFlags.length} selected</span>
+              <span className="text-xs text-text-muted">{selectedFlags.length} selected</span>
               <Button
                 size="sm"
                 tone="primary"
@@ -195,7 +195,7 @@ export default function ValidationPage() {
               />
             </Field>
             {bulkReasonError && (
-              <p className="text-xs text-red-400">A reason is required — this is the audit trail.</p>
+              <p className="text-xs text-bad">A reason is required — this is the audit trail.</p>
             )}
             <div>
               <Button
@@ -221,7 +221,7 @@ export default function ValidationPage() {
       {/* ---------------------------------------------------------- the flags */}
       {groups.map(([sourceName, flags]) => (
         <div key={sourceName} className="flex flex-col gap-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-400">
+          <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-muted">
             {sourceName}
             <Badge tone={flags.some(isOpen) ? 'bad' : 'good'} mono>
               {flags.filter(isOpen).length} open / {flags.length}
@@ -244,8 +244,8 @@ export default function ValidationPage() {
         <div className="flex flex-col gap-3">
           {cleanSources.map((name) => (
             <div key={name} className="flex flex-col gap-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">{name}</h2>
-              <div className="rounded-xl border border-emerald-900/60 bg-emerald-500/[0.04] px-4 py-3 text-sm text-emerald-300">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">{name}</h2>
+              <div className="rounded-xl border border-green-accent/40 bg-green-accent/[0.06] px-4 py-3 text-sm text-green-accent">
                 No issues found — clean submission.
               </div>
             </div>
@@ -363,12 +363,12 @@ function FlagCard({
                 type="checkbox"
                 checked={selected}
                 onChange={(e) => onSelect(e.target.checked)}
-                className="size-3.5 accent-amber-500"
+                className="size-3.5 accent-blue-accent"
                 aria-label="select flag"
               />
             )}
             <Badge tone={severityTone}>{flag.severity}</Badge>
-            <span className="text-sm font-medium text-zinc-100">{RULE_LABEL[flag.rule]}</span>
+            <span className="text-sm font-medium text-text">{RULE_LABEL[flag.rule]}</span>
             {flag.origin === 'draft_review' && <Badge tone="info">from draft review</Badge>}
           </span>
           <span className="flex items-center gap-2">
@@ -378,16 +378,16 @@ function FlagCard({
                 queried {flag.daysWaiting === 0 ? 'just now' : `${flag.daysWaiting}d ago`}
               </Badge>
             )}
-            <span className="font-mono text-xs text-zinc-500">{flag.file}</span>
+            <span className="font-mono text-xs text-text-muted">{flag.file}</span>
           </span>
         </div>
 
-        <span className="font-mono text-sm text-zinc-400">{prettyRowRef(flag.rowRef)}</span>
+        <span className="font-mono text-sm text-text-muted">{prettyRowRef(flag.rowRef)}</span>
 
         {/* The credibility line. Both numbers, largest thing on the card. */}
-        <p className="font-mono text-lg leading-snug text-zinc-50">{flag.evidence}</p>
+        <p className="font-mono text-lg leading-snug text-text">{flag.evidence}</p>
 
-        <p className="text-sm italic leading-relaxed text-zinc-400">&ldquo;{flag.plainEnglish}&rdquo;</p>
+        <p className="text-sm italic leading-relaxed text-text-muted">&ldquo;{flag.plainEnglish}&rdquo;</p>
 
         {prior && (
           <Banner tone="info" title="Justified in an earlier cycle">
@@ -430,7 +430,7 @@ function FlagCard({
               />
             </Field>
             {reasonError && (
-              <p className="text-xs text-red-400">A reason is required — this is the audit trail.</p>
+              <p className="text-xs text-bad">A reason is required — this is the audit trail.</p>
             )}
             <PanelActions
               onCancel={() => setPanel(null)}
@@ -489,10 +489,10 @@ function FlagCard({
               />
             </Field>
             {editHint && (
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-text-muted">
                 {editValue !== null ? (
                   <>
-                    <span className="font-mono text-zinc-200">
+                    <span className="font-mono text-text">
                       {flag.submittedValue} → {editValue}
                     </span>{' '}
                     — {editHint}
@@ -524,7 +524,7 @@ function FlagCard({
 
         {panel === 'threshold' && (
           <Panel>
-            <p className="text-xs leading-relaxed text-zinc-400">
+            <p className="text-xs leading-relaxed text-text-muted">
               Raising the threshold for this series is standing policy — it persists into future
               cycles and is listed on the Data Dashboard, so it never becomes invisible. Sibling
               flags the new threshold no longer catches will close with your reason attached.
@@ -568,11 +568,11 @@ function FlagCard({
 
         {flag.status === 'awaiting_response' && (
           <Panel>
-            <p className="text-sm text-zinc-400">
-              Query sent to <span className="font-mono text-zinc-300">{stakeholder?.email}</span> —
+            <p className="text-sm text-text-muted">
+              Query sent to <span className="font-mono text-text">{stakeholder?.email}</span> —
               awaiting response.
             </p>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-text-muted">
               {flag.daysWaiting === 0
                 ? 'Sent just now. A reminder goes out at 3 business days and it escalates at 5.'
                 : `Waiting ${flag.daysWaiting} business day${flag.daysWaiting === 1 ? '' : 's'}.`}
@@ -590,7 +590,7 @@ function FlagCard({
 
         {flag.status === 'escalated' && (
           <Panel tone="bad">
-            <p className="text-sm text-red-200">
+            <p className="text-sm text-bad">
               No reply in {flag.daysWaiting} business days. Escalated to{' '}
               <span className="font-mono">{stakeholder?.escalationContact}</span>. You can still
               resolve it yourself at any point.
@@ -608,7 +608,7 @@ function FlagCard({
 
         {flag.status === 'responded' && (
           <Panel>
-            <p className="font-mono text-sm leading-relaxed text-zinc-100">
+            <p className="font-mono text-sm leading-relaxed text-text">
               &ldquo;{flag.response}&rdquo;
             </p>
             {replyImpact && <ImpactLine text={replyImpact} />}
@@ -626,34 +626,34 @@ function FlagCard({
         )}
 
         {flag.status === 'justified' && (
-          <p className="text-sm text-emerald-300">Justified — &ldquo;{flag.note}&rdquo;</p>
+          <p className="text-sm text-green-accent">Justified — &ldquo;{flag.note}&rdquo;</p>
         )}
 
         {flag.status === 'corrected' && (
           <div className="flex flex-col gap-1.5">
-            <p className="font-mono text-sm text-emerald-300">
+            <p className="font-mono text-sm text-green-accent">
               {flag.correctedValue
                 ? `Corrected — ${flag.submittedValue} → ${flag.correctedValue}`
                 : 'Resolved — confirmed, no data change'}
             </p>
             {flag.impact?.reachesPlan && (
-              <p className="font-mono text-xs text-zinc-400">
+              <p className="font-mono text-xs text-text-muted">
                 plan effect: {flag.impact.productionDelta > 0 ? '+' : ''}
                 {flag.impact.productionDelta} kb · {fmtMoneyDelta(flag.impact.revenueDelta)}
               </p>
             )}
-            {flag.note && <p className="text-xs italic text-zinc-500">&ldquo;{flag.note}&rdquo;</p>}
+            {flag.note && <p className="text-xs italic text-text-muted">&ldquo;{flag.note}&rdquo;</p>}
           </div>
         )}
 
         {flag.history.length > 0 && (
-          <details className="border-t border-zinc-800 pt-2">
-            <summary className="cursor-pointer text-xs text-zinc-500">
+          <details className="border-t border-border pt-2">
+            <summary className="cursor-pointer text-xs text-text-muted">
               {flag.history.length} transition{flag.history.length === 1 ? '' : 's'}
             </summary>
             <ul className="mt-2 flex flex-col gap-1">
               {flag.history.map((h, i) => (
-                <li key={i} className="font-mono text-[11px] text-zinc-500">
+                <li key={i} className="font-mono text-[11px] text-text-muted">
                   {relTime(h.at)} · {h.actor} · {h.from} → {h.to}
                   {h.note && ` · ${h.note}`}
                 </li>
@@ -669,9 +669,9 @@ function FlagCard({
 /** The line that makes materiality visible before the planner commits. */
 function ImpactLine({ text }: { text: string }) {
   return (
-    <div className="rounded-lg border border-amber-900/60 bg-amber-500/[0.06] px-3 py-2.5">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-500/80">Plan impact</p>
-      <p className="mt-0.5 text-sm leading-relaxed text-amber-100">{text}</p>
+    <div className="rounded-lg border border-warn/40 bg-warn/[0.06] px-3 py-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-text0/80">Plan impact</p>
+      <p className="mt-0.5 text-sm leading-relaxed text-warn">{text}</p>
     </div>
   );
 }
@@ -680,7 +680,7 @@ function Panel({ children, tone }: { children: React.ReactNode; tone?: 'bad' }) 
   return (
     <div
       className={`flex flex-col gap-2.5 rounded-lg border px-3.5 py-3 ${
-        tone === 'bad' ? 'border-red-900/70 bg-red-500/[0.05]' : 'border-zinc-800 bg-zinc-950/60'
+        tone === 'bad' ? 'border-bad/50 bg-bad/[0.05]' : 'border-border bg-surface'
       }`}
     >
       {children}

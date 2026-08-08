@@ -1,21 +1,64 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
+  --bg: #ffffff;
+  --surface: #f3f6f8;
+  --surface-2: #e8ecef;
+  --border: #dce2e6;
+  --text: #10131a;
+  --text-muted: #5b6670;
+  --green: #00a651;
+  --blue: #003f8a;
+  --warn: #c2410c;
+  --bad: #dc2626;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.08);
+  --radius-card: 14px;
+}
+
+.dark {
+  --bg: #0f1f35;
+  --surface: #16283f;
+  --surface-2: #1c3350;
+  --border: #26405f;
+  --text: #eaf0f6;
+  --text-muted: #8fa3b8;
+  --green: #00a651;
+  --blue: #2e7fd6;
+  --warn: #f59e0b;
+  --bad: #f87171;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-green-accent: var(--green);
+  --color-blue-accent: var(--blue);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+  --radius-card: var(--radius-card);
+  --shadow-card: var(--shadow-card);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), Arial, Helvetica, sans-serif;
+}
+
+.font-body {
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
 }
 
 /* The gate's refusal shake — the one animation besides the validation spinner
@@ -42,4 +85,40 @@ body {
 
 .animate-shake {
   animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    110deg,
+    var(--surface-2) 0%,
+    var(--border) 45%,
+    var(--surface-2) 55%,
+    var(--surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer,
+  .animate-shake {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

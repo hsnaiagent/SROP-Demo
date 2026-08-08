@@ -10,6 +10,9 @@
 
 import type { ReactNode } from 'react';
 
+const cardBase =
+  'rounded-[var(--radius-card)] border shadow-[var(--shadow-card)]';
+
 // -------------------------------------------------------------------- structure
 
 export function Screen({
@@ -24,11 +27,11 @@ export function Screen({
   children: ReactNode;
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-8 py-8">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-8 py-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">{title}</h1>
-          {lede && <p className="max-w-3xl text-sm leading-relaxed text-zinc-400">{lede}</p>}
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-text">{title}</h1>
+          {lede && <p className="max-w-3xl text-sm leading-relaxed text-text-muted">{lede}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </header>
@@ -53,19 +56,19 @@ export function Card({
   children?: ReactNode;
 }) {
   const tones = {
-    default: 'border-zinc-800 bg-zinc-900/50',
-    good: 'border-emerald-900/60 bg-emerald-500/[0.04]',
-    warn: 'border-amber-900/60 bg-amber-500/[0.04]',
-    bad: 'border-red-900/60 bg-red-500/[0.04]',
-    accent: 'border-zinc-700 bg-zinc-900',
+    default: 'border-border bg-surface',
+    good: 'border-green-accent/40 bg-green-accent/[0.06]',
+    warn: 'border-warn/40 bg-warn/[0.06]',
+    bad: 'border-bad/40 bg-bad/[0.06]',
+    accent: 'border-blue-accent/40 bg-surface-2',
   };
   return (
-    <section className={`rounded-xl border ${tones[tone]} ${className}`}>
+    <section className={`${cardBase} ${tones[tone]} ${className}`}>
       {(title || actions) && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/70 px-5 py-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3.5">
           <div className="flex flex-col gap-0.5">
-            {title && <h2 className="text-sm font-semibold text-zinc-100">{title}</h2>}
-            {subtitle && <p className="text-xs text-zinc-500">{subtitle}</p>}
+            {title && <h2 className="font-display text-sm font-semibold text-text">{title}</h2>}
+            {subtitle && <p className="font-mono text-xs text-text-muted">{subtitle}</p>}
           </div>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </div>
@@ -80,11 +83,24 @@ export function Grid({ cols = 3, children }: { cols?: 2 | 3 | 4; children: React
   return <div className={`grid grid-cols-1 gap-4 ${map[cols]}`}>{children}</div>;
 }
 
-export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
+export function EmptyState({
+  title,
+  children,
+  placeholder,
+}: {
+  title: string;
+  children?: ReactNode;
+  placeholder?: boolean;
+}) {
   return (
-    <div className="rounded-xl border border-dashed border-zinc-800 px-6 py-12 text-center">
-      <p className="text-sm font-medium text-zinc-300">{title}</p>
-      {children && <p className="mx-auto mt-2 max-w-md text-sm text-zinc-500">{children}</p>}
+    <div className="rounded-[var(--radius-card)] border border-dashed border-border px-6 py-12 text-center">
+      {placeholder && (
+        <div className="mx-auto mb-4 flex justify-center">
+          <GridMotif className="w-24" />
+        </div>
+      )}
+      <p className="text-sm font-medium text-text">{title}</p>
+      {children && <p className="mx-auto mt-2 max-w-md text-sm text-text-muted">{children}</p>}
     </div>
   );
 }
@@ -113,13 +129,14 @@ export function Button({
   type?: 'button' | 'submit';
 }) {
   const tones: Record<ButtonTone, string> = {
-    primary: 'bg-amber-500 text-zinc-950 hover:bg-amber-400 disabled:bg-zinc-800 disabled:text-zinc-500',
-    good: 'bg-emerald-500 text-zinc-950 hover:bg-emerald-400 disabled:bg-zinc-800 disabled:text-zinc-500',
+    primary:
+      'bg-blue-accent text-white hover:brightness-110 disabled:bg-surface-2 disabled:text-text-muted',
+    good: 'bg-green-accent text-white hover:brightness-110 disabled:bg-surface-2 disabled:text-text-muted',
     ghost:
-      'border border-zinc-700 text-zinc-100 hover:border-zinc-500 hover:bg-zinc-800/50 disabled:border-zinc-800 disabled:text-zinc-600',
-    quiet: 'text-zinc-400 hover:text-zinc-100 disabled:text-zinc-700',
+      'border border-border text-text hover:border-blue-accent/60 hover:bg-surface-2 disabled:border-border disabled:text-text-muted',
+    quiet: 'text-text-muted hover:text-text disabled:text-text-muted/50',
     danger:
-      'border border-red-900 text-red-300 hover:border-red-700 hover:bg-red-500/10 disabled:border-zinc-800 disabled:text-zinc-600',
+      'border border-bad/50 text-bad hover:border-bad hover:bg-bad/10 disabled:border-border disabled:text-text-muted',
   };
   const sizes = { sm: 'px-2.5 py-1.5 text-xs', md: 'px-3.5 py-2 text-sm' };
   return (
@@ -146,15 +163,15 @@ export function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">{label}</span>
+      <span className="font-mono text-xs text-text-muted">{label}</span>
       {children}
-      {hint && <span className="text-xs text-zinc-500">{hint}</span>}
+      {hint && <span className="text-xs text-text-muted">{hint}</span>}
     </label>
   );
 }
 
 const inputBase =
-  'w-full rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-600 focus:border-amber-500';
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors placeholder:text-text-muted/60 focus:border-blue-accent';
 
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputBase} ${props.className ?? ''}`} />;
@@ -179,7 +196,7 @@ export function Select({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`rounded-lg border border-zinc-700 bg-zinc-950/60 px-2.5 py-1.5 text-sm text-zinc-100 outline-none focus:border-amber-500 ${className}`}
+      className={`rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text outline-none focus:border-blue-accent ${className}`}
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
@@ -197,23 +214,126 @@ export function Tabs<T extends string>({
 }: {
   value: T;
   onChange: (v: T) => void;
-  tabs: Array<{ value: T; label: string; badge?: ReactNode }>;
+  tabs: Array<{ value: T; label: string; description?: string; badge?: ReactNode }>;
 }) {
   return (
-    <div className="flex gap-1 rounded-lg border border-zinc-800 bg-zinc-900/60 p-1">
-      {tabs.map((t) => (
-        <button
-          key={t.value}
-          type="button"
-          onClick={() => onChange(t.value)}
-          className={`flex items-center gap-2 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${
-            value === t.value ? 'bg-zinc-800 text-zinc-50' : 'text-zinc-400 hover:text-zinc-200'
-          }`}
-        >
-          {t.label}
-          {t.badge}
-        </button>
-      ))}
+    <div className="flex rounded-[var(--radius-card)] border border-border bg-surface shadow-[var(--shadow-card)]">
+      {tabs.map((t) => {
+        const active = value === t.value;
+        return (
+          <button
+            key={t.value}
+            type="button"
+            onClick={() => onChange(t.value)}
+            className={`relative flex flex-1 flex-col items-center gap-0.5 px-4 py-3 text-center transition-colors ${
+              active ? 'bg-surface-2 text-text' : 'text-text-muted hover:text-text'
+            }`}
+          >
+            <span className="flex items-center gap-2 text-sm font-medium">
+              {t.label}
+              {t.badge}
+            </span>
+            {t.description && (
+              <span className="font-mono text-[11px] text-text-muted">{t.description}</span>
+            )}
+            {active && (
+              <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-blue-accent" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function Chip({
+  children,
+  active,
+  onClick,
+  className = '',
+}: {
+  children: ReactNode;
+  active?: boolean;
+  onClick?: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+        active
+          ? 'border-blue-accent bg-blue-accent/15 text-blue-accent'
+          : 'border-border text-text-muted hover:border-blue-accent/40 hover:text-text'
+      } ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function ProgressBar({
+  label,
+  value,
+  max = 100,
+  tone = 'blue',
+  showValue,
+}: {
+  label: string;
+  value: number;
+  max?: number;
+  tone?: 'blue' | 'green';
+  showValue?: string;
+}) {
+  const pct = Math.min(100, Math.max(0, (value / max) * 100));
+  const fill = tone === 'green' ? 'bg-green-accent' : 'bg-blue-accent';
+  const display = showValue ?? `${Math.round(pct)}%`;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-xs text-text-muted">{label}</span>
+        <span className="font-mono text-xs tabular-nums text-text">{display}</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+        <div className={`h-full rounded-full transition-all ${fill}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+export function GradientPlaceholder({ className = '' }: { className?: string }) {
+  return (
+    <div
+      className={`rounded-lg ${className}`}
+      style={{
+        background: 'linear-gradient(135deg, var(--green) 0%, var(--blue) 50%, #0f1f35 100%)',
+      }}
+    />
+  );
+}
+
+export function GridMotif({ className = '' }: { className?: string }) {
+  const cells = [
+    'gradient',
+    'gradient',
+    'shimmer',
+    'gradient',
+    'shimmer',
+    'gradient',
+    'gradient',
+    'gradient',
+    'shimmer',
+  ];
+  return (
+    <div className={`grid grid-cols-3 gap-2 ${className}`}>
+      {cells.map((type, i) =>
+        type === 'gradient' ? (
+          <GradientPlaceholder key={i} className="aspect-square rounded-md" />
+        ) : (
+          <div key={i} className="aspect-square animate-shimmer rounded-md" />
+        )
+      )}
     </div>
   );
 }
@@ -232,17 +352,17 @@ export function Badge({
   mono?: boolean;
 }) {
   const tones: Record<BadgeTone, string> = {
-    neutral: 'bg-zinc-800 text-zinc-300',
-    good: 'bg-emerald-500/15 text-emerald-300',
-    warn: 'bg-amber-500/15 text-amber-300',
-    bad: 'bg-red-500/15 text-red-300',
-    info: 'bg-sky-500/15 text-sky-300',
-    accent: 'bg-amber-500 text-zinc-950',
+    neutral: 'bg-surface-2 text-text-muted',
+    good: 'bg-green-accent/15 text-green-accent',
+    warn: 'bg-warn/15 text-warn',
+    bad: 'bg-bad/15 text-bad',
+    info: 'bg-blue-accent/15 text-blue-accent',
+    accent: 'bg-blue-accent text-white',
   };
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold ${tones[tone]} ${
-        mono ? 'font-mono tabular-nums' : ''
+      className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold ${tones[tone]} ${
+        mono ? 'tabular-nums' : ''
       }`}
     >
       {children}
@@ -253,17 +373,17 @@ export function Badge({
 export function Spinner({ className = '' }: { className?: string }) {
   return (
     <span
-      className={`inline-block size-3.5 animate-spin rounded-full border-2 border-zinc-600 border-t-amber-400 ${className}`}
+      className={`inline-block size-3.5 animate-spin rounded-full border-2 border-border border-t-blue-accent ${className}`}
     />
   );
 }
 
 export function Dot({ tone }: { tone: 'good' | 'warn' | 'bad' | 'idle' }) {
   const tones = {
-    good: 'bg-emerald-400',
-    warn: 'bg-amber-400',
-    bad: 'bg-red-400',
-    idle: 'bg-zinc-600',
+    good: 'bg-green-accent',
+    warn: 'bg-warn',
+    bad: 'bg-bad',
+    idle: 'bg-text-muted',
   };
   return <span className={`inline-block size-2 shrink-0 rounded-full ${tones[tone]}`} />;
 }
@@ -280,13 +400,15 @@ export function Banner({
   actions?: ReactNode;
 }) {
   const tones = {
-    info: 'border-sky-900/70 bg-sky-500/[0.06] text-sky-100',
-    good: 'border-emerald-900/70 bg-emerald-500/[0.06] text-emerald-100',
-    warn: 'border-amber-900/70 bg-amber-500/[0.06] text-amber-100',
-    bad: 'border-red-900/70 bg-red-500/[0.06] text-red-100',
+    info: 'border-blue-accent/40 bg-blue-accent/[0.06] text-text',
+    good: 'border-green-accent/40 bg-green-accent/[0.06] text-text',
+    warn: 'border-warn/40 bg-warn/[0.06] text-text',
+    bad: 'border-bad/40 bg-bad/[0.06] text-text',
   };
   return (
-    <div className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 ${tones[tone]}`}>
+    <div
+      className={`flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border px-4 py-3 ${tones[tone]}`}
+    >
       <div className="flex flex-col gap-0.5">
         {title && <p className="text-sm font-semibold">{title}</p>}
         {children && <div className="text-sm leading-relaxed opacity-90">{children}</div>}
@@ -311,20 +433,20 @@ export function Stat({
   onClick?: () => void;
 }) {
   const tones = {
-    neutral: 'text-zinc-50',
-    good: 'text-emerald-300',
-    warn: 'text-amber-300',
-    bad: 'text-red-300',
+    neutral: 'text-text',
+    good: 'text-green-accent',
+    warn: 'text-warn',
+    bad: 'text-bad',
   };
-  const interactive = onClick ? 'cursor-pointer hover:border-zinc-600' : '';
+  const interactive = onClick ? 'cursor-pointer hover:border-blue-accent/40' : '';
   return (
     <div
       onClick={onClick}
-      className={`flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 transition-colors ${interactive}`}
+      className={`flex flex-col gap-1 ${cardBase} border-border bg-surface px-4 py-3 transition-colors ${interactive}`}
     >
-      <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">{label}</span>
+      <span className="font-mono text-xs text-text-muted">{label}</span>
       <span className={`font-mono text-2xl font-semibold tabular-nums ${tones[tone]}`}>{value}</span>
-      {hint && <span className="text-xs text-zinc-500">{hint}</span>}
+      {hint && <span className="text-xs text-text-muted">{hint}</span>}
     </div>
   );
 }
@@ -343,14 +465,14 @@ export function Table({
 }) {
   const right = new Set(align ?? []);
   return (
-    <div className="overflow-x-auto rounded-lg border border-zinc-800">
+    <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-zinc-800 bg-zinc-900/80">
+          <tr className="border-b border-border bg-surface-2">
             {columns.map((c, i) => (
               <th
                 key={c + i}
-                className={`whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 ${
+                className={`whitespace-nowrap px-3 py-2 font-mono text-xs font-semibold text-text-muted ${
                   right.has(i) ? 'text-right' : 'text-left'
                 }`}
               >
@@ -375,15 +497,15 @@ export function Row({
   onClick?: () => void;
 }) {
   const tones = {
-    critical: 'border-l-2 border-l-red-500 bg-red-500/[0.04]',
-    warning: 'border-l-2 border-l-amber-500 bg-amber-500/[0.03]',
+    critical: 'border-l-2 border-l-bad bg-bad/[0.04]',
+    warning: 'border-l-2 border-l-warn bg-warn/[0.03]',
     ok: 'border-l-2 border-l-transparent',
-    changed: 'border-l-2 border-l-sky-500 bg-sky-500/[0.04]',
+    changed: 'border-l-2 border-l-blue-accent bg-blue-accent/[0.04]',
   };
   return (
     <tr
       onClick={onClick}
-      className={`border-b border-zinc-800/60 last:border-0 hover:bg-zinc-800/30 ${
+      className={`border-b border-border/60 last:border-0 hover:bg-surface-2/50 ${
         tone ? tones[tone] : ''
       } ${onClick ? 'cursor-pointer' : ''}`}
     >
@@ -408,17 +530,17 @@ export function Cell({
   colSpan?: number;
 }) {
   const tones = {
-    muted: 'text-zinc-500',
-    good: 'text-emerald-300',
-    warn: 'text-amber-300',
-    bad: 'text-red-300',
+    muted: 'text-text-muted',
+    good: 'text-green-accent',
+    warn: 'text-warn',
+    bad: 'text-bad',
   };
   return (
     <td
       colSpan={colSpan}
       className={`whitespace-nowrap px-3 py-2 ${right ? 'text-right' : ''} ${
         mono ? 'font-mono tabular-nums' : ''
-      } ${tone ? tones[tone] : 'text-zinc-200'} ${className}`}
+      } ${tone ? tones[tone] : 'text-text'} ${className}`}
     >
       {children}
     </td>
@@ -446,17 +568,17 @@ export function BandBar({
 
   return (
     <div className="flex items-center gap-2">
-      <div className="relative h-2 w-24 shrink-0 overflow-hidden rounded-full bg-zinc-800">
+      <div className="relative h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-surface-2">
         <div
-          className="absolute inset-y-0 rounded-full bg-zinc-700"
+          className="absolute inset-y-0 rounded-full bg-border"
           style={{ left: `${bandStart}%`, width: `${bandWidth}%` }}
         />
         <div
-          className={`absolute inset-y-0 w-[3px] rounded-full ${outside ? 'bg-red-400' : 'bg-emerald-400'}`}
+          className={`absolute inset-y-0 w-[3px] rounded-full ${outside ? 'bg-bad' : 'bg-green-accent'}`}
           style={{ left: `${pos}%` }}
         />
       </div>
-      <span className="font-mono text-xs tabular-nums text-zinc-500">
+      <span className="font-mono text-xs tabular-nums text-text-muted">
         {min}–{max}
       </span>
     </div>

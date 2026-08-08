@@ -161,22 +161,22 @@ export default function DraftReviewPage() {
         }
       >
         {pendingRevisions.length + openComments.length === 0 ? (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-text-muted">
             No stakeholder has proposed a change to this version.
           </p>
         ) : (
           <div className="flex flex-col gap-4">
             {pendingRevisions.map((revision) => (
-              <div key={revision.id} className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-4">
+              <div key={revision.id} className="rounded-lg border border-border bg-surface p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-zinc-100">{revision.author}</span>
+                    <span className="text-sm font-semibold text-text">{revision.author}</span>
                     <Badge tone="info">{revision.channel}</Badge>
                     {revision.recognisedAs && (
                       <Badge>recognised as {revision.recognisedAs}</Badge>
                     )}
                   </span>
-                  <span className="font-mono text-xs text-zinc-500">{revision.fileName}</span>
+                  <span className="font-mono text-xs text-text-muted">{revision.fileName}</span>
                 </div>
 
                 <ul className="mt-3 flex flex-col gap-2">
@@ -187,29 +187,29 @@ export default function DraftReviewPage() {
                         key={i}
                         className={`rounded-md border px-3 py-2 ${
                           change.verdict === 'out_of_scope'
-                            ? 'border-red-900/60 bg-red-500/[0.05]'
+                            ? 'border-bad/40 bg-bad/[0.05]'
                             : change.verdict === 'extreme_value'
-                              ? 'border-amber-900/60 bg-amber-500/[0.05]'
-                              : 'border-zinc-800'
+                              ? 'border-warn/40 bg-warn/[0.05]'
+                              : 'border-border'
                         }`}
                       >
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-xs text-zinc-400">
+                          <span className="font-mono text-xs text-text-muted">
                             {prettyRef(change.rowRef)} · {change.field}
                           </span>
                           <Badge tone={v.tone}>{v.label}</Badge>
                         </div>
-                        <p className="mt-1 font-mono text-sm text-zinc-100">
+                        <p className="mt-1 font-mono text-sm text-text">
                           {change.before} → {change.after}
                         </p>
-                        <p className="mt-0.5 text-xs text-zinc-400">{change.reason}</p>
+                        <p className="mt-0.5 text-xs text-text-muted">{change.reason}</p>
                       </li>
                     );
                   })}
                 </ul>
 
                 {revision.changes.some((c) => c.verdict === 'out_of_scope') && (
-                  <p className="mt-2.5 text-xs text-red-300">
+                  <p className="mt-2.5 text-xs text-bad">
                     Out-of-scope changes are held, not applied. Accepting one is recorded against
                     you, not {revision.author}.
                   </p>
@@ -245,19 +245,19 @@ export default function DraftReviewPage() {
             ))}
 
             {openComments.map((comment) => (
-              <div key={comment.id} className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-4">
+              <div key={comment.id} className="rounded-lg border border-border bg-surface p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-zinc-100">{comment.author}</span>
+                    <span className="text-sm font-semibold text-text">{comment.author}</span>
                     <Badge tone="info">comment</Badge>
                   </span>
-                  <span className="font-mono text-xs text-zinc-500">{prettyRef(comment.rowRef)}</span>
+                  <span className="font-mono text-xs text-text-muted">{prettyRef(comment.rowRef)}</span>
                 </div>
-                <p className="mt-2 font-mono text-sm text-zinc-100">
+                <p className="mt-2 font-mono text-sm text-text">
                   currently {comment.quotedValue}
                   {comment.proposedValue !== null && ` → proposed ${comment.proposedValue} kb`}
                 </p>
-                <p className="mt-1.5 text-sm italic leading-relaxed text-zinc-300">
+                <p className="mt-1.5 text-sm italic leading-relaxed text-text">
                   &ldquo;{comment.text}&rdquo;
                 </p>
                 <div className="mt-3 flex flex-wrap items-end gap-2">
@@ -319,16 +319,16 @@ export default function DraftReviewPage() {
               >
                 <div className="flex flex-col gap-2 text-sm">
                   {review.respondedAt ? (
-                    <span className="text-xs text-zinc-500">responded {relTime(review.respondedAt)}</span>
+                    <span className="text-xs text-text-muted">responded {relTime(review.respondedAt)}</span>
                   ) : (
-                    <span className="text-xs text-zinc-500">
+                    <span className="text-xs text-text-muted">
                       {review.daysWaiting === 0
                         ? 'notified, no response yet'
                         : `waiting ${review.daysWaiting} business day${review.daysWaiting === 1 ? '' : 's'}`}
                     </span>
                   )}
 
-                  {review.note && <p className="text-xs italic text-zinc-400">{review.note}</p>}
+                  {review.note && <p className="text-xs italic text-text-muted">{review.note}</p>}
 
                   {['notified', 'viewed', 'escalated'].includes(review.status) && (
                     <div className="flex flex-wrap gap-2">
@@ -356,7 +356,7 @@ export default function DraftReviewPage() {
 
                   {review.status === 'escalated' && (
                     <div className="flex flex-col gap-2">
-                      <p className="text-xs text-red-300">
+                      <p className="text-xs text-bad">
                         No response in {review.daysWaiting} business days. Silence is not approval.
                       </p>
                       <Textarea

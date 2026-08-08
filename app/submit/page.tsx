@@ -58,10 +58,10 @@ export default function SubmitPage() {
       lede={`Requested for cycle ${cycle.id}. ${slaLabel(submission, request) || 'Received.'}`}
     >
       <Card title="What was asked" subtitle={`From ${request.recipient}, due ${request.dueDate}`}>
-        <ul className="flex flex-col gap-1.5 text-sm text-zinc-300">
+        <ul className="flex flex-col gap-1.5 text-sm text-text">
           {request.items.map((item, i) => (
             <li key={i} className="flex gap-2">
-              <span className="text-zinc-600">•</span>
+              <span className="text-text-muted/70">•</span>
               <span>{item}</span>
             </li>
           ))}
@@ -85,7 +85,7 @@ export default function SubmitPage() {
         <div className="flex flex-col gap-4">
           <div
             onClick={() => input.current?.click()}
-            className="cursor-pointer rounded-xl border border-dashed border-zinc-700 px-6 py-8 text-center transition-colors hover:border-zinc-500"
+            className="cursor-pointer rounded-xl border border-dashed border-border px-6 py-8 text-center transition-colors hover:border-blue-accent/50"
           >
             <input
               ref={input}
@@ -94,10 +94,10 @@ export default function SubmitPage() {
               className="hidden"
               onChange={(e) => setPicked(e.target.files?.[0]?.name ?? null)}
             />
-            <p className="text-sm font-medium text-zinc-200">
+            <p className="text-sm font-medium text-text">
               {picked ?? 'Drop your file here, or click to browse'}
             </p>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-text-muted">
               {picked
                 ? 'Ready to submit.'
                 : `Expected: ${request.items[0]?.toLowerCase() ?? 'your data file'}`}
@@ -125,7 +125,7 @@ export default function SubmitPage() {
             >
               {busy === 'submit' ? 'Submitting…' : latest ? 'Submit new version' : 'Submit'}
             </Button>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-text-muted">
               This is a demo: the upload is acknowledged and then the pre-generated fixture for{' '}
               {role} is used. Your file does not change the numbers.
             </p>
@@ -142,12 +142,12 @@ export default function SubmitPage() {
                 key={flag.id}
                 className={`rounded-lg border px-4 py-3 ${
                   ['justified', 'corrected'].includes(flag.status)
-                    ? 'border-zinc-800 bg-zinc-950/50'
-                    : 'border-amber-900/60 bg-amber-500/[0.05]'
+                    ? 'border-border bg-surface'
+                    : 'border-warn/40 bg-warn/[0.05]'
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-mono text-xs text-zinc-400">{prettyRef(flag.rowRef)}</span>
+                  <span className="font-mono text-xs text-text-muted">{prettyRef(flag.rowRef)}</span>
                   <Badge
                     tone={
                       flag.status === 'corrected' || flag.status === 'justified'
@@ -160,10 +160,10 @@ export default function SubmitPage() {
                     {flag.status.replace(/_/g, ' ')}
                   </Badge>
                 </div>
-                <p className="mt-1.5 font-mono text-sm text-zinc-100">{flag.evidence}</p>
-                <p className="mt-1 text-sm italic text-zinc-400">&ldquo;{flag.plainEnglish}&rdquo;</p>
+                <p className="mt-1.5 font-mono text-sm text-text">{flag.evidence}</p>
+                <p className="mt-1 text-sm italic text-text-muted">&ldquo;{flag.plainEnglish}&rdquo;</p>
                 {flag.status === 'awaiting_response' && (
-                  <p className="mt-2 text-sm text-amber-200">
+                  <p className="mt-2 text-sm text-warn">
                     The planner has asked you about this. Reply from{' '}
                     <Link href="/" className="underline">
                       My Tasks
@@ -172,7 +172,7 @@ export default function SubmitPage() {
                   </p>
                 )}
                 {flag.note && (
-                  <p className="mt-2 text-xs text-emerald-300">Resolved — &ldquo;{flag.note}&rdquo;</p>
+                  <p className="mt-2 text-xs text-green-accent">Resolved — &ldquo;{flag.note}&rdquo;</p>
                 )}
               </div>
             ))}

@@ -158,7 +158,7 @@ export default function RequestsPage() {
       >
         <Card tone="accent">
           <div className="flex flex-col items-start gap-4 py-4">
-            <p className="max-w-xl text-sm leading-relaxed text-zinc-400">
+            <p className="max-w-xl text-sm leading-relaxed text-text-muted">
               One cycle covers one issue of the SROP and always plans four months ahead. The
               orchestrator will draft data requests for OSPAS, Demand Planning and all four
               refineries — nothing is sent until you review them.
@@ -308,7 +308,7 @@ export default function RequestsPage() {
           <div className="flex flex-col gap-3">
             <div className="flex max-h-[380px] flex-col gap-3 overflow-y-auto">
               {cycle.chat.length === 0 && (
-                <p className="text-sm leading-relaxed text-zinc-500">
+                <p className="text-sm leading-relaxed text-text-muted">
                   Type what you need below, or load last cycle&apos;s request log and adjust it. The
                   orchestrator compares whatever you say against the previous cycle, so anything you
                   routinely ask for but have not mentioned is still included.
@@ -319,11 +319,11 @@ export default function RequestsPage() {
                   key={msg.id}
                   className={`rounded-lg px-3.5 py-2.5 text-sm leading-relaxed ${
                     msg.role === 'planner'
-                      ? 'ml-8 bg-amber-500/10 text-amber-50'
-                      : 'mr-4 border border-zinc-800 bg-zinc-950/60 text-zinc-200'
+                      ? 'ml-8 bg-blue-accent/10 text-text'
+                      : 'mr-4 border border-border bg-surface text-text'
                   }`}
                 >
-                  <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                  <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-text-muted">
                     {msg.role === 'planner' ? 'You' : 'Orchestrator'}
                   </span>
                   {polishedReplies[msg.id] ?? msg.text}
@@ -354,7 +354,7 @@ export default function RequestsPage() {
                       key={s}
                       type="button"
                       onClick={() => setText(s)}
-                      className="rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+                      className="rounded-full border border-border px-2.5 py-1 text-xs text-text-muted hover:border-blue-accent/50 hover:text-text"
                     >
                       {s}
                     </button>
@@ -368,7 +368,7 @@ export default function RequestsPage() {
         {/* -------------------------------------------------- draft request cards */}
         <div className="flex flex-col gap-3">
           {cycle.requests.length === 0 ? (
-            <EmptyState title="No requests drafted yet">
+            <EmptyState title="No requests drafted yet" placeholder>
               Tell the orchestrator what you need, or load last cycle&apos;s log.
             </EmptyState>
           ) : (
@@ -390,12 +390,12 @@ export default function RequestsPage() {
                 subtitle={req.email}
                 actions={
                   req.status === 'draft' && (
-                    <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
+                    <label className="flex cursor-pointer items-center gap-2 text-xs text-text-muted">
                       <input
                         type="checkbox"
                         checked={req.reviewed}
                         onChange={(e) => act('update_request', { id: req.id, reviewed: e.target.checked })}
-                        className="size-3.5 accent-amber-500"
+                        className="size-3.5 accent-blue-accent"
                       />
                       reviewed
                     </label>
@@ -403,17 +403,17 @@ export default function RequestsPage() {
                 }
               >
                 <div className="flex flex-col gap-3">
-                  <ul className="flex flex-col gap-1.5 text-sm text-zinc-300">
+                  <ul className="flex flex-col gap-1.5 text-sm text-text">
                     {req.items.map((item, i) => (
                       <li key={i} className="flex gap-2">
-                        <span className="text-zinc-600">•</span>
+                        <span className="text-text-muted/70">•</span>
                         <span className="flex-1">{item}</span>
                       </li>
                     ))}
                   </ul>
 
                   <div className="flex flex-wrap items-center gap-4 text-xs">
-                    <span className="flex items-center gap-2 text-zinc-500">
+                    <span className="flex items-center gap-2 text-text-muted">
                       Due
                       {req.status === 'draft' ? (
                         <Input
@@ -423,20 +423,20 @@ export default function RequestsPage() {
                           className="w-auto px-2 py-1 text-xs"
                         />
                       ) : (
-                        <span className="font-mono text-zinc-300">{req.dueDate}</span>
+                        <span className="font-mono text-text">{req.dueDate}</span>
                       )}
                     </span>
                     <button
                       type="button"
                       onClick={() => setExpanded(expanded === req.id ? null : req.id)}
-                      className="text-zinc-400 underline decoration-dotted hover:text-zinc-200"
+                      className="text-text-muted underline decoration-dotted hover:text-text"
                     >
                       {expanded === req.id ? 'hide email' : 'show email draft'}
                     </button>
                   </div>
 
                   {expanded === req.id && (
-                    <div className="flex flex-col gap-2.5 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3">
+                    <div className="flex flex-col gap-2.5 rounded-lg border border-border bg-surface p-3">
                       <Field label="To">
                         <Input
                           value={req.emailDraft.to}

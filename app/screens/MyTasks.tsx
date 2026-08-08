@@ -34,7 +34,7 @@ export default function MyTasks() {
   if (!cycle) {
     return (
       <Screen title={`Welcome, ${role}`} lede="No SROP cycle is open yet. You will be emailed when data is requested.">
-        <EmptyState title="Nothing to do">
+        <EmptyState title="Nothing to do" placeholder>
           The planner has not opened this month&apos;s cycle. Nothing is expected from you.
         </EmptyState>
       </Screen>
@@ -65,7 +65,7 @@ export default function MyTasks() {
       }
     >
       {tasks === 0 && (
-        <EmptyState title="You are up to date">
+        <EmptyState title="You are up to date" placeholder>
           Nothing is expected from you right now. You will be emailed when the planner needs
           something, and any draft SROP issued to you will appear here.
         </EmptyState>
@@ -85,16 +85,16 @@ export default function MyTasks() {
             </Link>
           }
         >
-          <ul className="flex flex-col gap-1.5 text-sm text-zinc-300">
+          <ul className="flex flex-col gap-1.5 text-sm text-text">
             {request.items.map((item) => (
               <li key={item} className="flex gap-2">
-                <span className="text-zinc-600">•</span>
+                <span className="text-text-muted/70">•</span>
                 {item}
               </li>
             ))}
           </ul>
           {submission.daysWaiting >= 5 && (
-            <p className="mt-3 text-sm text-red-300">
+            <p className="mt-3 text-sm text-bad">
               This has been escalated to your department head. The cycle is currently blocked on you.
             </p>
           )}
@@ -110,11 +110,11 @@ export default function MyTasks() {
           subtitle={`${flag.file} · ${prettyRef(flag.rowRef)}`}
         >
           <div className="flex flex-col gap-3">
-            <p className="font-mono text-base text-zinc-100">{flag.evidence}</p>
-            <p className="text-sm italic text-zinc-400">&ldquo;{flag.plainEnglish}&rdquo;</p>
-            <p className="text-sm text-zinc-400">
+            <p className="font-mono text-base text-text">{flag.evidence}</p>
+            <p className="text-sm italic text-text-muted">&ldquo;{flag.plainEnglish}&rdquo;</p>
+            <p className="text-sm text-text-muted">
               Confirm the figure is intentional, or reply with the corrected value. You can also
-              re-upload the file on <Link href="/submit" className="text-amber-400 underline">Submit Data</Link>.
+              re-upload the file on <Link href="/submit" className="text-blue-accent underline">Submit Data</Link>.
             </p>
             <Textarea
               rows={2}
@@ -133,7 +133,7 @@ export default function MyTasks() {
               </Button>
             </div>
             {flag.status === 'escalated' && (
-              <p className="text-xs text-red-300">
+              <p className="text-xs text-bad">
                 No reply was received within 5 business days, so your department head has been copied.
               </p>
             )}
@@ -157,7 +157,7 @@ export default function MyTasks() {
             </Link>
           }
         >
-          <p className="text-sm text-zinc-300">
+          <p className="text-sm text-text">
             Your section shows only the rows that concern you, checked against your own capacity and
             tank limits. You can approve it, propose a change to your own data, or reject a specific
             value with a comment.
@@ -174,9 +174,9 @@ export default function MyTasks() {
           subtitle={prettyRef(comment.rowRef)}
         >
           <div className="flex flex-col gap-2 text-sm">
-            <p className="italic text-zinc-400">You wrote: &ldquo;{comment.text}&rdquo;</p>
-            <p className="text-zinc-200">
-              <span className="text-zinc-500">Planner: </span>
+            <p className="italic text-text-muted">You wrote: &ldquo;{comment.text}&rdquo;</p>
+            <p className="text-text">
+              <span className="text-text-muted">Planner: </span>
               {comment.plannerResponse}
             </p>
             {comment.status === 'accepted' && comment.proposedValue !== null && (
@@ -190,11 +190,11 @@ export default function MyTasks() {
 
       {/* Completed, collapsed */}
       {(submission?.versions.length || review) && (
-        <details className="rounded-xl border border-zinc-800 bg-zinc-900/30 px-5 py-3">
-          <summary className="cursor-pointer text-sm font-medium text-zinc-400">
+        <details className="rounded-xl border border-border bg-surface-2/30 px-5 py-3">
+          <summary className="cursor-pointer text-sm font-medium text-text-muted">
             What you have already done this cycle
           </summary>
-          <ul className="mt-3 flex flex-col gap-2 text-sm text-zinc-400">
+          <ul className="mt-3 flex flex-col gap-2 text-sm text-text-muted">
             {submission?.versions.map((v) => (
               <li key={v.n} className="flex items-baseline gap-3">
                 <Badge tone="good">v{v.n}</Badge>

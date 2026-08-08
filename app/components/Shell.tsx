@@ -15,8 +15,8 @@ import { useEffect } from 'react';
 
 import { CYCLE_STATUS_LABEL } from '@/lib/types';
 
-import { useCycle, PLANNER } from '../providers';
-import { Badge, Spinner } from './ui';
+import { useCycle, PLANNER, useTheme } from '../providers';
+import { Badge, Button, Spinner } from './ui';
 
 /** Routes that only make sense for the planner. */
 const PLANNER_ONLY = new Set([
@@ -42,6 +42,7 @@ interface NavEntry {
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const { cycle, reference, role, setRole, isPlanner, loading, error, message, clearMessage } = useCycle();
+  const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -79,10 +80,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-[248px] shrink-0 flex-col border-r border-zinc-800 bg-zinc-950">
-        <div className="border-b border-zinc-800 px-5 py-4">
-          <p className="text-sm font-semibold tracking-tight text-zinc-50">SROP Platform</p>
-          <p className="mt-0.5 font-mono text-xs text-zinc-500">
+      <aside className="flex w-[248px] shrink-0 flex-col border-r border-border bg-bg">
+        <div className="border-b border-border px-5 py-4">
+          <p className="font-display text-sm font-semibold tracking-tight text-text">SROP Platform</p>
+          <p className="mt-0.5 font-mono text-xs text-text-muted">
             Cycle {cycle?.id ?? '—'}
             {cycle && ` · ${cycle.horizon.length}-month horizon`}
           </p>
@@ -96,7 +97,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <span className="flex w-full items-center gap-2.5">
                 <span
                   className={`w-4 shrink-0 font-mono text-[10px] ${
-                    entry.done ? 'text-emerald-400' : 'text-zinc-600'
+                    entry.done ? 'text-green-accent' : 'text-text-muted'
                   }`}
                 >
                   {entry.done ? '✓' : entry.phase}
@@ -117,7 +118,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 <span
                   key={entry.href}
                   title={entry.block ?? undefined}
-                  className={`${base} cursor-not-allowed text-zinc-600`}
+                  className={`${base} cursor-not-allowed text-text-muted/50`}
                 >
                   {inner}
                 </span>
@@ -128,7 +129,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 key={entry.href}
                 href={entry.href}
                 className={`${base} ${
-                  active ? 'bg-zinc-800 text-zinc-50' : 'text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100'
+                  active
+                    ? 'border-l-2 border-l-blue-accent bg-surface-2 text-text'
+                    : 'text-text-muted hover:bg-surface hover:text-text'
                 }`}
               >
                 {inner}
@@ -137,8 +140,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="border-t border-zinc-800 px-5 py-3">
-          <p className="text-[11px] leading-relaxed text-zinc-600">
+        <div className="border-t border-border px-5 py-3">
+          <p className="text-[11px] leading-relaxed text-text-muted">
             Uploads are accepted and acknowledged, then the pre-generated fixture is used. Email is
             drafted, never sent.
           </p>
@@ -146,7 +149,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-950/80 px-8 py-3 backdrop-blur">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface/80 px-8 py-3 backdrop-blur">
           <div className="flex items-center gap-3">
             {loading ? (
               <Spinner />
@@ -156,38 +159,43 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               </Badge>
             )}
             {cycle && (
-              <span className="font-mono text-xs text-zinc-500">
+              <span className="font-mono text-xs text-text-muted">
                 phase {Math.min(7, phaseOf(cycle) + 1)} of 7
               </span>
             )}
           </div>
 
-          <label className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-wide text-zinc-500">Viewing as</span>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm font-medium text-zinc-100 outline-none focus:border-amber-500"
-            >
-              {identities.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-            {openTasks > 0 && <Badge tone="warn" mono>{openTasks}</Badge>}
-          </label>
+          <div className="flex items-center gap-3">
+            <Button tone="quiet" size="sm" onClick={toggleTheme} title="Toggle theme">
+              {theme === 'dark' ? '☀' : '☾'}
+            </Button>
+            <label className="flex items-center gap-2">
+              <span className="font-mono text-xs text-text-muted">Viewing as</span>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm font-medium text-text outline-none focus:border-blue-accent"
+              >
+                {identities.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              {openTasks > 0 && <Badge tone="warn" mono>{openTasks}</Badge>}
+            </label>
+          </div>
         </header>
 
         {(error || message) && (
           <div className="px-8 pt-4">
             {error && (
-              <div className="rounded-lg border border-red-900 bg-red-500/10 px-4 py-2.5 text-sm text-red-200">
+              <div className="rounded-lg border border-bad/50 bg-bad/10 px-4 py-2.5 text-sm text-bad">
                 {error}
               </div>
             )}
             {message && !error && (
-              <div className="rounded-lg border border-sky-900 bg-sky-500/10 px-4 py-2.5 text-sm text-sky-100">
+              <div className="rounded-lg border border-blue-accent/40 bg-blue-accent/10 px-4 py-2.5 text-sm text-text">
                 {message}
               </div>
             )}
