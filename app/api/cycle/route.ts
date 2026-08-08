@@ -261,33 +261,38 @@ function apply(
     // ------------------------------------------------------------ phase 2
     case 'submit': {
       const source = String(p.source);
+      const names = receiveSubmission(c, actor, source, String(p.note ?? ''));
+      result.message = `Received ${names.join(', ')}. Validation runs next.`;
+      return;
+    }
+
+    case 'receive_and_validate': {
+      const source = String(p.source);
       const sub = c.submissions.find((s) => s.source === source);
       if (!sub) throw new Error(`${source} was not asked for anything this cycle`);
+      if (sub.versions.length > 0) throw new Error(`${source} already received — use Validate`);
 
-      const files = submissionFilesFor(source, sub.kind);
-      if (files.length === 0) throw new Error(`no fixture data exists for ${source}`);
+      const names = receiveSubmission(c, actor, source, 'demo fixture');
+      runValidationSources(c, [source], result);
+      result.message = `Received ${names.join(', ')} · ${result.message}`;
+      return;
+    }
 
-      sub.versions.push({
-        n: sub.versions.length + 1,
-        receivedAt: now(),
-        note: String(p.note ?? ''),
-        files,
-      });
-      sub.status = 'submitted';
-      sub.assumed = false;
+    case 'receive_and_validate_all': {
+      const pending = c.submissions.filter(
+        (s) =>
+          s.versions.length === 0 &&
+          c.requests.find((r) => r.recipient === s.source)?.status === 'sent'
+      );
+      if (pending.length === 0) throw new Error('no sources are waiting to be received');
 
-      // A resubmission supersedes the flags raised against the previous version rather
-      // than deleting them — the audit trail keeps what was found and when.
-      for (const flag of c.flags) {
-        if (flag.source === source && flag.origin === 'validation') {
-          flag.history.push({ at: now(), actor, from: flag.status, to: 'superseded', note: `v${sub.versions.length} received` });
-          flag.status = 'superseded';
-        }
+      const sources = pending.map((s) => s.source);
+      const received: string[] = [];
+      for (const source of sources) {
+        received.push(...receiveSubmission(c, actor, source, 'demo fixture'));
       }
-      if (c.masterFile) markStale(c, `${source} submitted v${sub.versions.length} after the last build`);
-
-      audit(c, actor, `submitted ${sub.kind}`, source, `v${sub.versions.length} · ${files.map((f) => f.name).join(', ')}`);
-      result.message = `Received ${files.map((f) => f.name).join(', ')}. Validation runs next.`;
+      runValidationSources(c, sources, result);
+      result.message = `Received ${sources.length} sources (${received.length} files) · ${result.message}`;
       return;
     }
 
@@ -295,41 +300,7 @@ function apply(
       const targets = p.source
         ? [String(p.source)]
         : c.submissions.filter((s) => s.versions.length > 0).map((s) => s.source);
-      if (targets.length === 0) throw new Error('nothing has been submitted yet');
-
-      const arrived = c.submissions.filter((s) => s.versions.length > 0).map((s) => s.source);
-
-      // One instance per source. Independent failure domains: a throw here leaves
-      // every other source untouched, and never marks a source clean by default.
-      const produced: Flag[] = [];
-      for (const source of targets) {
-        const sub = c.submissions.find((s) => s.source === source)!;
-        const { flags, crossSourcePending } = validateSource(source, {
-          overrides: c.thresholdOverrides,
-          arrived,
-        });
-        sub.crossSourcePending = crossSourcePending;
-        sub.status = flags.length > 0 ? 'flagged' : 'clean';
-        produced.push(...flags);
-      }
-
-      // Preserve triage already done: a flag with the same deterministic id keeps its
-      // status, note and history across re-validation.
-      const previous = new Map(c.flags.map((f) => [f.id, f]));
-      const kept = c.flags.filter((f) => !targets.includes(f.source) || f.origin !== 'validation');
-      const merged = produced.map((fresh) => {
-        const before = previous.get(fresh.id);
-        if (!before || before.status === 'superseded') return fresh;
-        return { ...fresh, status: before.status, note: before.note, correctedValue: before.correctedValue, response: before.response, impact: before.impact, daysWaiting: before.daysWaiting, history: before.history };
-      });
-      c.flags = [...kept, ...merged];
-
-      // Any excluded series needs an explicit decision from Y before the gate opens.
-      syncExcludedDecisions(c, buildPlan(loadPlanInput()).excluded);
-
-      const clean = c.submissions.filter((s) => s.status === 'clean').map((s) => s.source);
-      result.message = summarise(openFlags(c), clean);
-      audit(c, 'Validation Agent', 'validated submissions', targets.join(', '), `${merged.length} flags`);
+      runValidationSources(c, targets, result);
       return;
     }
 
@@ -375,6 +346,22 @@ function apply(
       recordJustification(c, flag, note);
       if (c.masterFile) markStale(c, 'a flag was resolved after the last build');
       audit(c, actor, 'justified flag', flag.rowRef, note);
+      return;
+    }
+
+    case 'flag_justify_all': {
+      const note = String(p.note ?? '').trim();
+      if (!note) throw new Error('a reason is required — this is the audit trail');
+      const targets = c.flags.filter((f) => f.status === 'open');
+      if (targets.length === 0) throw new Error('no open flags to justify');
+      for (const flag of targets) {
+        transition(flag, 'justified', actor, note);
+        flag.note = note;
+        recordJustification(c, flag, note);
+        audit(c, actor, 'justified flag', flag.rowRef, note);
+      }
+      if (c.masterFile) markStale(c, 'flags were resolved after the last build');
+      result.message = `Justified ${targets.length} flags.`;
       return;
     }
 
@@ -803,6 +790,43 @@ function apply(
       return;
     }
 
+    case 'simulate_review_approve': {
+      const draft = currentDraft(c);
+      if (!draft || draft.status !== 'issued') throw new Error('no draft is out for review');
+      const review = c.reviews.find((r) => r.id === String(p.id ?? '') && r.draftId === draft.id);
+      if (!review) throw new Error('review not found');
+      if (['approved', 'confirmed', 'deemed_approved'].includes(review.status)) {
+        throw new Error(`${review.stakeholder} has already responded`);
+      }
+      if (['comment_submitted', 'update_submitted'].includes(review.status)) {
+        throw new Error(
+          `${review.stakeholder} has a pending proposal — resolve it in the revision queue first`
+        );
+      }
+      review.status = 'approved';
+      review.respondedAt = now();
+      audit(c, review.stakeholder, 'approved the draft', draft.id, 'demo simulation');
+      result.message = `${review.stakeholder} approved the draft.`;
+      return;
+    }
+
+    case 'simulate_review_approve_all': {
+      const draft = currentDraft(c);
+      if (!draft || draft.status !== 'issued') throw new Error('no draft is out for review');
+      const pending = c.reviews.filter(
+        (r) =>
+          r.draftId === draft.id && ['notified', 'viewed', 'escalated'].includes(r.status)
+      );
+      if (pending.length === 0) throw new Error('no stakeholders waiting to approve');
+      for (const review of pending) {
+        review.status = 'approved';
+        review.respondedAt = now();
+        audit(c, review.stakeholder, 'approved the draft', draft.id, 'demo simulation');
+      }
+      result.message = `${pending.length} stakeholders approved the draft.`;
+      return;
+    }
+
     case 'simulate_responses': {
       // Drives every scripted stakeholder response at once, for the walkthrough.
       const draft = currentDraft(c);
@@ -899,6 +923,98 @@ function apply(
 }
 
 // --------------------------------------------------------------------- helpers
+
+function receiveSubmission(
+  c: CycleRecord,
+  actor: string,
+  source: string,
+  note: string
+): string[] {
+  const sub = c.submissions.find((s) => s.source === source);
+  if (!sub) throw new Error(`${source} was not asked for anything this cycle`);
+
+  const files = submissionFilesFor(source, sub.kind);
+  if (files.length === 0) throw new Error(`no fixture data exists for ${source}`);
+
+  sub.versions.push({
+    n: sub.versions.length + 1,
+    receivedAt: now(),
+    note,
+    files,
+  });
+  sub.status = 'submitted';
+  sub.assumed = false;
+
+  for (const flag of c.flags) {
+    if (flag.source === source && flag.origin === 'validation') {
+      flag.history.push({
+        at: now(),
+        actor,
+        from: flag.status,
+        to: 'superseded',
+        note: `v${sub.versions.length} received`,
+      });
+      flag.status = 'superseded';
+    }
+  }
+  if (c.masterFile) markStale(c, `${source} submitted v${sub.versions.length} after the last build`);
+
+  audit(
+    c,
+    actor,
+    `submitted ${sub.kind}`,
+    source,
+    `v${sub.versions.length} · ${files.map((f) => f.name).join(', ')}`
+  );
+  return files.map((f) => f.name);
+}
+
+/** One validation instance per source. Independent failure domains. */
+function runValidationSources(
+  c: CycleRecord,
+  targets: string[],
+  result: { message?: string }
+): void {
+  if (targets.length === 0) throw new Error('nothing has been submitted yet');
+
+  const arrived = c.submissions.filter((s) => s.versions.length > 0).map((s) => s.source);
+
+  const produced: Flag[] = [];
+  for (const source of targets) {
+    const sub = c.submissions.find((s) => s.source === source)!;
+    const { flags, crossSourcePending } = validateSource(source, {
+      overrides: c.thresholdOverrides,
+      arrived,
+    });
+    sub.crossSourcePending = crossSourcePending;
+    sub.status = flags.length > 0 ? 'flagged' : 'clean';
+    produced.push(...flags);
+  }
+
+  const previous = new Map(c.flags.map((f) => [f.id, f]));
+  const kept = c.flags.filter((f) => !targets.includes(f.source) || f.origin !== 'validation');
+  const merged = produced.map((fresh) => {
+    const before = previous.get(fresh.id);
+    if (!before || before.status === 'superseded') return fresh;
+    return {
+      ...fresh,
+      status: before.status,
+      note: before.note,
+      correctedValue: before.correctedValue,
+      response: before.response,
+      impact: before.impact,
+      daysWaiting: before.daysWaiting,
+      history: before.history,
+    };
+  });
+  c.flags = [...kept, ...merged];
+
+  syncExcludedDecisions(c, buildPlan(loadPlanInput()).excluded);
+
+  const clean = c.submissions.filter((s) => s.status === 'clean').map((s) => s.source);
+  result.message = summarise(openFlags(c), clean);
+  audit(c, 'Validation Agent', 'validated submissions', targets.join(', '), `${merged.length} flags`);
+}
 
 function ensureExcludedDecisions(c: CycleRecord) {
   if (!c.excludedDecisions) c.excludedDecisions = [];

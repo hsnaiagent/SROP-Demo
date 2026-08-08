@@ -4,7 +4,7 @@ importing anything from generate_data.py, so a bug in the generator cannot hide
 behind a matching bug in the checker.
 
 Run:  python scripts/check_data.py
-Exit 0 means the dataset is demo-safe: exactly the eight planted defects, with
+Exit 0 means the dataset is demo-safe: exactly the three planted validation flags, with
 YANBU and RIYADH clean.
 
 This mirrors lib/rules.ts. If the two ever disagree, one of them is wrong and the
@@ -147,7 +147,7 @@ for f in sorted(flags, key=lambda f: (f["rule"], f["ref"])):
     print(f"  {f['rule']:<22} {f['source']:<18} {f['file']:<24} {f['ref']}")
     print(f"  {'':<22} {'':<18} {'':<24} {f['evidence']}\n")
 
-EXPECTED = 8
+EXPECTED = 3
 by_rule = collections.Counter(f["rule"] for f in flags)
 by_source = collections.Counter(f["source"] for f in flags)
 
@@ -170,11 +170,9 @@ if len(flags) != EXPECTED:
     problems.append(f"expected {EXPECTED} flags, found {len(flags)}")
 
 EXPECTED_BY_RULE = {
-    "HISTORICAL_DEVIATION": 4,   # JAZAN DIESEL Oct + BP-QASSIM JET-A1 x3
+    "HISTORICAL_DEVIATION": 1,   # JAZAN DIESEL Oct
     "LIMIT_BREACH": 1,
     "ZERO_OR_MISSING": 1,
-    "UNKNOWN_ENTITY": 1,
-    "CROSS_SOURCE_CONFLICT": 1,
 }
 if dict(by_rule) != EXPECTED_BY_RULE:
     problems.append(f"rule mix is {dict(by_rule)}, expected {EXPECTED_BY_RULE}")
@@ -208,12 +206,12 @@ oct_diesel_price = next(
 if oct_diesel_price != 93.84:
     problems.append(f"DIESEL 2026-10 price is {oct_diesel_price}, must be 93.84 for the -$1.45M delta")
 
-# Every planned series needs limits, or it silently vanishes from the plan.
+# Every planned series in demand must have reference limits.
 unknown_series = {
     (r["refinery"], r["bulk_plant"], r["product"]) for r in demand
 } - LIMIT_KEYS
-if unknown_series != {("JAZAN", "BP-JAZAN", "LPG-95")}:
-    problems.append(f"unplannable series must be exactly LPG-95, found {sorted(unknown_series)}")
+if unknown_series:
+    problems.append(f"demand rows without reference limits: {sorted(unknown_series)}")
 
 if problems:
     print("\nFAIL")
@@ -221,4 +219,4 @@ if problems:
         print(f"  - {p}")
     sys.exit(1)
 
-print("\nPASS - exactly the eight planted defects; YANBU and RIYADH clean; demo numbers pinned.")
+print("\nPASS - exactly the three planted validation flags; YANBU and RIYADH clean; demo numbers pinned.")

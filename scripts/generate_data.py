@@ -30,8 +30,7 @@ HIST_MONTHS = [
     "2026-05", "2026-06", "2026-07", "2026-08",
 ]
 
-# Products that carry a price. ASPHALT is deliberately absent -> DEFECT 8.
-PRICED_PRODUCTS = ["DIESEL", "GASOLINE-91", "GASOLINE-95", "JET-A1", "FUEL-OIL"]
+PRICED_PRODUCTS = ["DIESEL", "GASOLINE-91", "GASOLINE-95", "JET-A1", "FUEL-OIL", "ASPHALT"]
 
 # refinery -> bulk plants it owns. Two refineries own two plants each, which is
 # what makes the field-level authority rule non-trivial.
@@ -63,7 +62,7 @@ BASE_DEMAND = {
     ("RIYADH", "BP-RIYADH", "GASOLINE-95"): 15.0,
     ("RIYADH", "BP-RIYADH", "ASPHALT"): 7.0,
     ("RIYADH", "BP-QASSIM", "DIESEL"): 11.0,
-    ("RIYADH", "BP-QASSIM", "JET-A1"): 12.0,   # DEFECT 5 lands on this series
+    ("RIYADH", "BP-QASSIM", "JET-A1"): 12.0,
     ("RABIGH", "BP-RABIGH", "DIESEL"): 19.0,
     ("RABIGH", "BP-RABIGH", "GASOLINE-91"): 26.0,
     ("RABIGH", "BP-RABIGH", "FUEL-OIL"): 14.0,
@@ -100,17 +99,10 @@ SUBMIT_FACTOR = {
 # 1  HISTORICAL_DEVIATION   JAZAN|BP-JAZAN|DIESEL 2026-10 at 41.2 vs mean 25.1  (+64%)
 # 2  LIMIT_BREACH           BP-JAZAN GASOLINE-91 opening 31.4 above max 27.0
 # 3  ZERO_OR_MISSING        JET-A1 2026-11 price is 0.0
-# 4  UNKNOWN_ENTITY         JAZAN|BP-JAZAN|LPG-95 - no reference limits
-# 5  HISTORICAL_DEVIATION   RIYADH|BP-QASSIM|JET-A1 for three months (+75%), a real
-#                           seasonal uplift that closes via one threshold override
-# 6  CROSS_SOURCE_CONFLICT  ASPHALT has demand but no price anywhere
-# 7  non-response           RABIGH submits nothing (state, not data)
-# 8  OUT_OF_SCOPE_EDIT      RABIGH's draft-review upload touches a price (revisions.json)
+# 4  non-response           RABIGH submits nothing (state, not data)
+# 5  OUT_OF_SCOPE_EDIT      RABIGH's draft-review upload touches a price (revisions.json)
 
 DEFECT_1 = ("JAZAN", "BP-JAZAN", "DIESEL", "2026-10", 41.2)
-DEFECT_4 = ("JAZAN", "BP-JAZAN", "LPG-95", "2026-11", 6.4)
-DEFECT_5_SERIES = ("RIYADH", "BP-QASSIM", "JET-A1")
-DEFECT_5_MONTHS = {"2026-10": 21.0, "2026-11": 21.6, "2026-12": 20.4}   # base 12.0
 DEFECT_3 = ("JET-A1", "2026-11")
 
 # --------------------------------------------------------------------- ref_limits
@@ -195,14 +187,10 @@ for refinery, plant, product in SERIES:
     for i, month in enumerate(PLAN_MONTHS):
         if (refinery, plant, product, month) == DEFECT_1[:4]:
             value = DEFECT_1[4]
-        elif (refinery, plant, product) == DEFECT_5_SERIES and month in DEFECT_5_MONTHS:
-            value = DEFECT_5_MONTHS[month]
         else:
             value = round(base * SUBMIT_FACTOR[product][i], 1)
         demand.append((refinery, plant, product, month, value))
 
-# exactly ONE unknown-entity row, so UNKNOWN_ENTITY fires exactly once
-demand.append(DEFECT_4)
 demand.sort(key=lambda r: (r[3], r[0], r[1], r[2]))
 
 write(
@@ -214,7 +202,7 @@ write(
 # -------------------------------------------- sub_prices  (Demand Planning)
 BASE_PRICE = {
     "DIESEL": 92.0, "GASOLINE-91": 88.0, "GASOLINE-95": 95.0,
-    "JET-A1": 97.0, "FUEL-OIL": 61.0,
+    "JET-A1": 97.0, "FUEL-OIL": 61.0, "ASPHALT": 54.0,
 }
 PRICE_DRIFT = [1.00, 1.02, 1.01, 0.99]
 
@@ -370,13 +358,6 @@ corrections = {
         "correctedValue": 25.8,
         "movesThePlan": True,
     },
-    "HISTORICAL_DEVIATION:RIYADH|BP-QASSIM|JET-A1": {
-        "from": "OSPAS",
-        "reply": "Confirmed intentional. Qassim JET-A1 lifts every Hajj season - this is "
-                 "the fourth year running. The 12-month mean flattens it out.",
-        "correctedValue": None,
-        "movesThePlan": False,
-    },
     "LIMIT_BREACH": {
         "from": "Refinery JAZAN",
         "reply": "Confirmed intentional. GASOLINE-91 is running an approved temporary "
@@ -388,20 +369,6 @@ corrections = {
         "from": "Demand Planning",
         "reply": "Confirmed intentional. No JET-A1 term pricing published for November - "
                  "scheduled shutdown, no liftings expected.",
-        "correctedValue": None,
-        "movesThePlan": False,
-    },
-    "UNKNOWN_ENTITY": {
-        "from": "OSPAS",
-        "reply": "Confirmed intentional. LPG-95 is a new grade approved for JAZAN; "
-                 "it has not been added to the reference limits file yet.",
-        "correctedValue": None,
-        "movesThePlan": False,
-    },
-    "CROSS_SOURCE_CONFLICT": {
-        "from": "Demand Planning",
-        "reply": "ASPHALT is priced off the annual contract, not the monthly term sheet. "
-                 "We will add it to the monthly file from next cycle.",
         "correctedValue": None,
         "movesThePlan": False,
     },

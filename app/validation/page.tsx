@@ -44,17 +44,22 @@ export default function ValidationPage() {
   const [rule, setRule] = useState(ALL);
   const [status, setStatus] = useState(ALL);
   const [selected, setSelected] = useState<string[]>([]);
+  const [bulkReason, setBulkReason] = useState(
+    'Confirmed within operational tolerances for this planning cycle.'
+  );
+  const [bulkReasonError, setBulkReasonError] = useState(false);
 
   if (!cycle) {
     return (
       <Screen title="Validation">
-        <EmptyState title="No cycle open">Start a cycle on Cycle Home first.</EmptyState>
+        <EmptyState title="No cycle open">Start a new cycle from Requests.</EmptyState>
       </Screen>
     );
   }
 
   const live = cycle.flags.filter((f) => f.status !== 'superseded');
   const open = openFlags(cycle);
+  const openForJustify = live.filter((f) => f.status === 'open');
   const g1 = gate1(cycle);
 
   const filtered = live.filter(
@@ -172,6 +177,46 @@ export default function ValidationPage() {
           )}
         </div>
       </Card>
+
+      {openForJustify.length > 0 && (
+        <Card
+          title="Demo shortcut"
+          subtitle={`Close all ${openForJustify.length} open flags with one justification`}
+        >
+          <div className="flex flex-col gap-3">
+            <Field label="Reason (required)" hint="Applied to every open flag — this is the audit trail.">
+              <Textarea
+                rows={2}
+                value={bulkReason}
+                onChange={(e) => {
+                  setBulkReason(e.target.value);
+                  if (e.target.value.trim()) setBulkReasonError(false);
+                }}
+              />
+            </Field>
+            {bulkReasonError && (
+              <p className="text-xs text-red-400">A reason is required — this is the audit trail.</p>
+            )}
+            <div>
+              <Button
+                tone="primary"
+                disabled={busy !== null}
+                onClick={() => {
+                  if (!bulkReason.trim()) {
+                    setBulkReasonError(true);
+                    return;
+                  }
+                  act('flag_justify_all', { note: bulkReason });
+                }}
+              >
+                {busy === 'flag_justify_all'
+                  ? 'Justifying…'
+                  : `Justify all ${openForJustify.length} open flags`}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* ---------------------------------------------------------- the flags */}
       {groups.map(([sourceName, flags]) => (

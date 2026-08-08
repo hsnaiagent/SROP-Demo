@@ -537,6 +537,10 @@ export interface ReferenceData {
   stakeholders: Stakeholder[];
   lastCycle: Record<string, number>;
   requestTemplate: Array<{ recipient: string; items: string[] }>;
+  /** Planning horizon months — used for pre-submission dashboard rows. */
+  horizon: string[];
+  /** Fixture submission data; planner corrections are applied via `resolvedPlanInput`. */
+  planInput: PlanInput;
 }
 
 export interface CyclePayload {

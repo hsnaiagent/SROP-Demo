@@ -17,92 +17,17 @@
  * workbook rather than reading one back.
  */
 
-import { loadInventory, loadLimits, loadOutage, refineries } from './csv';
+import { loadInventory, loadLimits, loadOutage, loadStakeholders, refineries } from './csv';
 import { buildPlan, seriesKey } from './plan';
+import { resolvedPlanInput as applyResolvedCorrections } from './resolved-input';
 import { now } from './store';
 import type { CycleRecord, MasterFile, MasterSheet, PlanInput } from './types';
 
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100));
 
-/**
- * Applies every resolved correction the planner made, so the workbook carries the
- * validated numbers rather than the submitted ones.
- */
+/** Server wrapper — supplies stakeholder metadata for assumed-plant marking. */
 export function resolvedPlanInput(cycle: CycleRecord, base: PlanInput): PlanInput {
-  let input = base;
-  const assumedPlants: string[] = [];
-
-  for (const submission of cycle.submissions) {
-    if (!submission.assumed) continue;
-    const s = refineries().find((r) => r.name === submission.source);
-    if (s) assumedPlants.push(...s.ownsPlants);
-  }
-
-  for (const flag of cycle.flags) {
-    if (flag.status !== 'corrected' || !flag.correctedValue) continue;
-    const value = Number(flag.correctedValue);
-    if (!Number.isFinite(value)) continue;
-    input = applyToField(input, flag.field, flag.rowRef, value);
-  }
-
-  for (const revision of cycle.revisions) {
-    if (revision.status !== 'accepted') continue;
-    for (const change of revision.changes) {
-      if (change.verdict === 'out_of_scope') continue;
-      input = applyToField(input, change.field, change.rowRef, change.after);
-    }
-  }
-
-  for (const comment of cycle.comments) {
-    if (comment.status !== 'accepted' || comment.proposedValue === null) continue;
-    input = applyToField(input, 'demand_kb', comment.rowRef, comment.proposedValue);
-  }
-
-  return { ...input, assumedPlants };
-}
-
-function applyToField(input: PlanInput, field: string, rowRef: string, value: number): PlanInput {
-  const parts = new Map(
-    rowRef.split(',').map((p) => {
-      const [k, ...rest] = p.split('=');
-      return [k.trim(), rest.join('=').trim()];
-    })
-  );
-
-  if (field === 'demand_kb') {
-    return {
-      ...input,
-      demand: input.demand.map((r) =>
-        r.refinery === parts.get('refinery') &&
-        r.bulkPlant === parts.get('bulk_plant') &&
-        r.product === parts.get('product') &&
-        r.month === parts.get('month')
-          ? { ...r, demandKb: value }
-          : r
-      ),
-    };
-  }
-  if (field === 'price_usd') {
-    return {
-      ...input,
-      prices: input.prices.map((r) =>
-        r.product === parts.get('product') && r.month === parts.get('month')
-          ? { ...r, priceUsd: value }
-          : r
-      ),
-    };
-  }
-  if (field === 'opening_inventory_kb') {
-    return {
-      ...input,
-      inventory: input.inventory.map((r) =>
-        r.bulkPlant === parts.get('bulk_plant') && r.product === parts.get('product')
-          ? { ...r, openingInventoryKb: value }
-          : r
-      ),
-    };
-  }
-  return input;
+  return applyResolvedCorrections(cycle, base, loadStakeholders());
 }
 
 /** Builds the workbook. Throws rather than emitting a partial one. */

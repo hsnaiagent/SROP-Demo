@@ -152,8 +152,22 @@ export default function RequestsPage() {
 
   if (!cycle) {
     return (
-      <Screen title="Requests">
-        <EmptyState title="No cycle open">Start a cycle on Cycle Home first.</EmptyState>
+      <Screen
+        title="Requests"
+        lede="No cycle is open. Start one to set the four-month planning horizon and open the orchestrator chat."
+      >
+        <Card tone="accent">
+          <div className="flex flex-col items-start gap-4 py-4">
+            <p className="max-w-xl text-sm leading-relaxed text-zinc-400">
+              One cycle covers one issue of the SROP and always plans four months ahead. The
+              orchestrator will draft data requests for OSPAS, Demand Planning and all four
+              refineries — nothing is sent until you review them.
+            </p>
+            <Button tone="primary" onClick={() => act('create_cycle')} disabled={busy !== null}>
+              {busy === 'create_cycle' ? 'Starting…' : 'Start new cycle'}
+            </Button>
+          </div>
+        </Card>
       </Screen>
     );
   }
@@ -238,16 +252,29 @@ export default function RequestsPage() {
       title="Requests"
       lede="Describe what you need and who from. The orchestrator drafts it; nothing is sent until you review it."
       actions={
-        !sent && (
+        <div className="flex flex-wrap items-center gap-2">
+          {!sent && (
+            <Button
+              tone="primary"
+              disabled={busy !== null || cycle.requests.length === 0 || unreviewed > 0}
+              title={unreviewed > 0 ? `${unreviewed} cards not yet reviewed` : undefined}
+              onClick={() => act('send_requests')}
+            >
+              {busy === 'send_requests' ? 'Sending…' : `Send all ${cycle.requests.length} requests`}
+            </Button>
+          )}
           <Button
-            tone="primary"
-            disabled={busy !== null || cycle.requests.length === 0 || unreviewed > 0}
-            title={unreviewed > 0 ? `${unreviewed} cards not yet reviewed` : undefined}
-            onClick={() => act('send_requests')}
+            tone="danger"
+            size="sm"
+            disabled={busy !== null}
+            title="Clears all cycle state — fixture data in data/ is untouched"
+            onClick={() => {
+              if (confirm('Delete this cycle and start over?')) act('reset');
+            }}
           >
-            {busy === 'send_requests' ? 'Sending…' : `Send all ${cycle.requests.length} requests`}
+            {busy === 'reset' ? 'Resetting…' : 'Reset cycle'}
           </Button>
-        )
+        </div>
       }
     >
       {polishingEmails && (

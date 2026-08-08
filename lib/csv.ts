@@ -195,6 +195,8 @@ export function loadReference(): ReferenceData {
     stakeholders: loadStakeholders(),
     lastCycle: prev.demand,
     requestTemplate: prev.requestTemplate,
+    horizon: prev.horizon,
+    planInput: loadPlanInput(),
   };
 }
 

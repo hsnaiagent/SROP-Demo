@@ -114,16 +114,14 @@ check('five of six submitted', () => {
 step('Phase 3 — validation, one instance per source');
 r = await act('validate');
 cycle = r.cycle;
-check('exactly the eight planted defects', () => {
-  assert.equal(cycle.flags.length, 8, `got ${cycle.flags.length}`);
+check('exactly the three planted validation flags', () => {
+  assert.equal(cycle.flags.length, 3, `got ${cycle.flags.length}`);
   const byRule = {};
   for (const f of cycle.flags) byRule[f.rule] = (byRule[f.rule] ?? 0) + 1;
   assert.deepEqual(byRule, {
-    HISTORICAL_DEVIATION: 4,
+    HISTORICAL_DEVIATION: 1,
     LIMIT_BREACH: 1,
     ZERO_OR_MISSING: 1,
-    UNKNOWN_ENTITY: 1,
-    CROSS_SOURCE_CONFLICT: 1,
   });
 });
 check('YANBU and RIYADH are clean', () => {
@@ -138,11 +136,6 @@ check('the headline flag carries both numbers', () => {
   assert.match(flag.evidence, /41\.2 kb/);
   assert.match(flag.evidence, /25\.1 kb/);
   assert.match(flag.evidence, /\+64%/);
-});
-check('the excluded series needs an explicit decision', () => {
-  assert.equal(cycle.excludedDecisions.length, 1);
-  assert.equal(cycle.excludedDecisions[0].key, 'JAZAN|BP-JAZAN|LPG-95');
-  assert.equal(cycle.excludedDecisions[0].decision, 'pending');
 });
 
 step('Gate 1 refuses while flags are open');
@@ -180,31 +173,6 @@ check('accepting records the correction and its plan impact', () => {
   assert.equal(f.correctedValue, '25.8');
   assert.equal(f.impact.productionDelta, -15.4);
   assert.equal(f.impact.revenueDelta, -1445136);
-});
-
-step('A threshold override closes three sibling flags at once');
-r = await act('override_threshold', {
-  scope: 'series',
-  key: 'RIYADH|BP-QASSIM|JET-A1',
-  deviation: 1.2,
-  reason: 'Hajj season uplift, recurring and confirmed',
-});
-cycle = r.cycle;
-check('three Qassim flags close with the override reason attached', () => {
-  const qassim = cycle.flags.filter((f) => f.rowRef.includes('BP-QASSIM'));
-  assert.equal(qassim.length, 3);
-  assert.ok(qassim.every((f) => f.status === 'justified'), 'all three justified');
-  assert.ok(qassim.every((f) => /Hajj/.test(f.note)));
-});
-check('the override is recorded as standing policy', () => {
-  assert.equal(cycle.thresholdOverrides.length, 1);
-  assert.equal(cycle.learned.length, 1);
-});
-
-step('An override on one series does not silence another');
-check('the JAZAN correction survived the override', () => {
-  const f = cycle.flags.find((x) => x.id === jazanFlag.id);
-  assert.equal(f.status, 'corrected');
 });
 
 step('Justify the remaining flags');
@@ -255,18 +223,6 @@ check('confirming marks the source assumed', () => {
   assert.equal(rabigh.assumed, true);
   assert.equal(rabigh.status, 'assumed');
 });
-
-step('Gate 1 still refuses: the excluded series is undecided');
-r = await act('build_master');
-check('a pending exclusion blocks the gate', () => {
-  assert.equal(r.ok, false);
-  assert.match(r.error, /excluded series awaiting your decision/);
-});
-r = await act('decide_excluded', {
-  key: 'JAZAN|BP-JAZAN|LPG-95',
-  reason: 'New grade approved for JAZAN; limits not yet issued.',
-});
-cycle = r.cycle;
 
 step('Phase 4 — the Intake Agent builds the workbook');
 r = await act('build_master');
@@ -328,10 +284,10 @@ check("YANBU's two plants are distinct rows", () => {
   assert.equal(sept.length, 2);
   assert.deepEqual(sept.map((x) => x.bulkPlant).sort(), ['BP-MADINAH', 'BP-YANBU']);
 });
-check('the excluded series is reported, not silently omitted', () => {
-  assert.equal(draft.excluded.length, 1);
-  assert.equal(draft.excluded[0].demandKb, 6.4);
-  assert.equal(draft.planRows.some((x) => x.product === 'LPG-95'), false);
+check('the excluded series sheet is present but empty in the trimmed dataset', () => {
+  const excluded = cycle.masterFile.sheets.find((s) => s.name === 'Excluded');
+  assert.ok(excluded);
+  assert.equal(excluded.rowCount, 0);
 });
 check('the assumed source is marked on the plan rows', () => {
   const rabighRows = draft.planRows.filter((x) => x.bulkPlant === 'BP-RABIGH');

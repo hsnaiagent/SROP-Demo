@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SROP — Four Agents</title>
+  <style>
+    :root {
+      --bg: #f6f4f0;
+      --card: #ffffff;
+      --ink: #1a1a1a;
+      --muted: #5c5c5c;
+      --line: #e2ddd4;
+      --orch: #2d5a8a;
+      --val: #8a4b2d;
+      --intake: #2d6a4f;
+      --file: #6b4b8a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      padding: 2.5rem 1.25rem 3rem;
+    }
+
+    .wrap {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      margin-top: 0.5rem;
+      color: var(--muted);
+      max-width: 36rem;
+      margin-inline: auto;
+    }
+
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem 0.75rem;
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .flow span {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.35rem 0.85rem;
+    }
+
+    .flow .arrow { border: none; background: none; padding: 0; }
+
+    .grid {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 700px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .agent {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1.35rem 1.4rem 1.25rem;
+      border-top: 4px solid var(--accent);
+    }
+
+    .agent h2 {
+      font-size: 1.15rem;
+      font-weight: 650;
+      margin-bottom: 0.25rem;
+    }
+
+    .agent .tagline {
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .agent dl {
+      display: grid;
+      gap: 0.65rem;
+      font-size: 0.92rem;
+    }
+
+    .agent dt {
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+
+    .agent dd { margin-left: 0; }
+
+    .agent--orch { --accent: var(--orch); }
+    .agent--val { --accent: var(--val); }
+    .agent--intake { --accent: var(--intake); }
+    .agent--file { --accent: var(--file); }
+
+    footer {
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.88rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    footer strong { color: var(--ink); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>The four SROP agents</h1>
+      <p>
+        Each agent reads data, applies fixed rules, and writes a result back to the cycle record.
+        The planner (Y) reviews and approves at every gate — agents prepare work; they do not decide alone.
+      </p>
+    </header>
+
+    <div class="flow" aria-label="Cycle flow">
+      <span>Planner chat</span>
+      <span class="arrow">→</span>
+      <span>Orchestrator</span>
+      <span class="arrow">→</span>
+      <span>Submissions</span>
+      <span class="arrow">→</span>
+      <span>Validation</span>
+      <span class="arrow">→</span>
+      <span>Intake</span>
+      <span class="arrow">→</span>
+      <span>LP model</span>
+      <span class="arrow">·</span>
+      <span>Draft review upload</span>
+      <span class="arrow">→</span>
+      <span>File-Recognition</span>
+    </div>
+
+    <div class="grid">
+      <article class="agent agent--orch">
+        <h2>1. Orchestrator</h2>
+        <p class="tagline">The coordinator — runs for the whole cycle.</p>
+        <dl>
+          <div>
+            <dt>When it runs</dt>
+            <dd>Planner sends chat on Requests; a request is sent; an SLA timer fires.</dd>
+          </div>
+          <div>
+            <dt>What it does</dt>
+            <dd>
+              Turns free text into per-recipient request drafts; compares against last cycle so nothing routine is dropped;
+              sends reminders and escalations; writes audit entries.
+            </dd>
+          </div>
+          <div>
+            <dt>Key rule</dt>
+            <dd>Never sends without planner review. If the ask is ambiguous, it asks — it does not guess.</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="agent agent--val">
+        <h2>2. Validation Agent</h2>
+        <p class="tagline">One instance per submission — all run in parallel.</p>
+        <dl>
+          <div>
+            <dt>When it runs</dt>
+            <dd>A file arrives, is replaced, or a corrected value changes underlying data.</dd>
+          </div>
+          <div>
+            <dt>What it does</dt>
+            <dd>
+              Checks submissions against history, refinery limits, and cross-source rules.
+              Raises flags with evidence and plain-English explanations.
+            </dd>
+          </div>
+          <div>
+            <dt>Key rule</dt>
+            <dd>Rules are deterministic code — same input, same flags every time. A crash never looks like “clean.”</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="agent agent--intake">
+        <h2>3. Intake Agent</h2>
+        <p class="tagline">The consolidator — builds the workbook the LP model reads.</p>
+        <dl>
+          <div>
+            <dt>When it runs</dt>
+            <dd>Planner closes the last open flag, accepted data changes, or planner clicks Rebuild.</dd>
+          </div>
+          <div>
+            <dt>What it does</dt>
+            <dd>
+              Merges six validated sources into one master workbook.
+              Every cell is traceable back to a submission and version.
+            </dd>
+          </div>
+          <div>
+            <dt>Key rule</dt>
+            <dd>Only clean, justified, corrected, or explicitly assumed data enters. Unresolved values stay out.</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="agent agent--file">
+        <h2>4. File-Recognition Agent</h2>
+        <p class="tagline">The gatekeeper on stakeholder self-service during draft review.</p>
+        <dl>
+          <div>
+            <dt>When it runs</dt>
+            <dd>A stakeholder uploads a changed file while reviewing the draft SROP.</dd>
+          </div>
+          <div>
+            <dt>What it does</dt>
+            <dd>
+              Identifies the file shape, diffs against the issued draft, checks authority per cell,
+              and flags extreme values — then shows the verdict to the stakeholder first.
+            </dd>
+          </div>
+          <div>
+            <dt>Key rule</dt>
+            <dd>Out-of-scope edits become suggestions for the planner — never auto-applied, never silently dropped.</dd>
+          </div>
+        </dl>
+      </article>
+    </div>
+
+    <footer>
+      <strong>Division of labour:</strong> arithmetic, rules, and gates run in code (reproducible).
+      Email wording, chat, and explanations may use an LLM with a template fallback (clearer prose only).
+    </footer>
+  </div>
+</body>
+</html>

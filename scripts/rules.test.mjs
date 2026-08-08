@@ -3,7 +3,7 @@
  *
  *   npm run test:rules
  *
- * `scripts/check_data.py` derives the same eight flags in Python without importing
+ * `scripts/check_data.py` derives the same three flags in Python without importing
  * anything from the generator. This file must agree with it. If the two disagree,
  * one of them is wrong and the demo is not safe to give.
  */
@@ -30,20 +30,18 @@ const validateAll = (opts = {}) => {
   return flags;
 };
 
-test('the eight planted defects, and only those', () => {
+test('the three planted validation flags, and only those', () => {
   const flags = validateAll();
 
   const byRule = {};
   for (const f of flags) byRule[f.rule] = (byRule[f.rule] ?? 0) + 1;
 
   assert.deepEqual(byRule, {
-    HISTORICAL_DEVIATION: 4, // JAZAN DIESEL Oct + BP-QASSIM JET-A1 x3
+    HISTORICAL_DEVIATION: 1, // JAZAN DIESEL Oct
     LIMIT_BREACH: 1,
     ZERO_OR_MISSING: 1,
-    UNKNOWN_ENTITY: 1,
-    CROSS_SOURCE_CONFLICT: 1,
   });
-  assert.equal(flags.length, 8);
+  assert.equal(flags.length, 3);
 });
 
 test('YANBU and RIYADH are clean', () => {
@@ -99,12 +97,9 @@ test('the matching rule: JAZAN inventory is never checked against YANBU limits',
   assert.match(breaches[0].rowRef, /product=GASOLINE-91/);
 });
 
-test('structural rules pre-empt statistical ones', () => {
-  // LPG-95 has no reference limits AND no history. It must report as an unknown
-  // entity once, not as a deviation, and not as both.
-  const flags = validateAll().filter((f) => f.rowRef.includes('product=LPG-95'));
-  assert.equal(flags.length, 1);
-  assert.equal(flags[0].rule, 'UNKNOWN_ENTITY');
+test('no unknown-entity rows in the trimmed dataset', () => {
+  const flags = validateAll().filter((f) => f.rule === 'UNKNOWN_ENTITY');
+  assert.equal(flags.length, 0);
 });
 
 test('cross-source rules defer until their dependency has arrived', () => {
@@ -118,10 +113,10 @@ test('cross-source rules defer until their dependency has arrived', () => {
 
   const together = validateSource('Demand Planning', { arrived: ALL_SOURCES });
   assert.equal(together.crossSourcePending, false);
-  assert.equal(together.flags.filter((f) => f.rule === 'CROSS_SOURCE_CONFLICT').length, 1);
+  assert.equal(together.flags.filter((f) => f.rule === 'CROSS_SOURCE_CONFLICT').length, 0);
 });
 
-test('a threshold override closes the three Qassim flags and nothing else', () => {
+test('a threshold override on another series does not silence JAZAN DIESEL', () => {
   const override = {
     id: 'o1',
     scope: 'series',
@@ -133,13 +128,7 @@ test('a threshold override closes the three Qassim flags and nothing else', () =
   };
 
   const flags = validateAll({ overrides: [override] });
-  assert.equal(flags.length, 5, 'three of the eight close');
-  assert.equal(
-    flags.filter((f) => f.rowRef.includes('BP-QASSIM')).length,
-    0,
-    'the Qassim uplift is inside the raised threshold'
-  );
-  // The JAZAN October flag is a different series and must survive.
+  assert.equal(flags.length, 3);
   assert.ok(
     flags.some((f) => f.rule === 'HISTORICAL_DEVIATION' && f.rowRef.includes('BP-JAZAN')),
     'an override on one series must not silence another'
@@ -176,7 +165,7 @@ test('validating a source that submits nothing throws rather than reporting clea
 test('summarise counts rather than editorialising', () => {
   const flags = validateAll();
   const summary = summarise(flags, ['Refinery YANBU', 'Refinery RIYADH']);
-  assert.match(summary, /8 anomalies/);
+  assert.match(summary, /3 anomalies/);
   assert.match(summary, /2 submissions clean/);
   assert.match(summarise([], ['A']), /clean/);
 });

@@ -69,7 +69,7 @@ export default function PlanPage() {
   if (!cycle) {
     return (
       <Screen title="Master File & Plan Run">
-        <EmptyState title="No cycle open">Start a cycle on Cycle Home first.</EmptyState>
+        <EmptyState title="No cycle open">Start a new cycle from Requests.</EmptyState>
       </Screen>
     );
   }

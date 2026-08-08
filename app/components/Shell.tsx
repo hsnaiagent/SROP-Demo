@@ -3,7 +3,7 @@
 /**
  * The application shell. version2.md §6.
  *
- * The only navigation in the app. Eight planner entries, each tied to exactly one
+ * The only navigation in the app. Five planner entries, each tied to exactly one
  * phase of the cycle, in the order the phases happen; three for a stakeholder.
  * Screens for phases not yet reached stay visible but disabled with the reason on
  * hover, so the shape of the whole process is legible from the first minute.
@@ -23,10 +23,8 @@ const PLANNER_ONLY = new Set([
   '/requests',
   '/submissions',
   '/validation',
-  '/dashboard',
   '/plan',
   '/draft-review',
-  '/history',
 ]);
 
 /** Routes that only make sense for a stakeholder. */
@@ -57,8 +55,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   // this, switching away from the planner on /requests leaves that page on screen until
   // something in the new nav is clicked.
   useEffect(() => {
+    if (isPlanner && pathname === '/') {
+      router.replace('/requests');
+      return;
+    }
+    if (isPlanner && (pathname === '/dashboard' || pathname === '/history')) {
+      router.replace('/requests');
+      return;
+    }
     if (isPlanner && STAKEHOLDER_ONLY.has(pathname)) {
-      router.replace('/');
+      router.replace('/requests');
       return;
     }
     if (!isPlanner && PLANNER_ONLY.has(pathname)) {
@@ -213,15 +219,13 @@ function plannerNav(cycle: CycleRecord | null): NavEntry[] {
       cycle.comments.filter((x) => x.status === 'open').length
     : 0;
 
-  const noCycle = cycle ? null : 'Start a cycle on Cycle Home first';
+  const noCycle = cycle ? null : 'Start a new cycle from Requests first';
 
   return [
-    { href: '/', label: 'Cycle Home', phase: 1, done: false },
     {
       href: '/requests',
       label: 'Requests',
       phase: 1,
-      block: noCycle,
       done: Boolean(cycle?.requests.some((r) => r.status === 'sent')),
     },
     {
@@ -241,12 +245,6 @@ function plannerNav(cycle: CycleRecord | null): NavEntry[] {
       done: Boolean(cycle && cycle.flags.length > 0 && flags.length === 0),
     },
     {
-      href: '/dashboard',
-      label: 'Data Dashboard',
-      phase: 3,
-      block: noCycle,
-    },
-    {
       href: '/plan',
       label: 'Master File & Plan',
       phase: 4,
@@ -256,16 +254,9 @@ function plannerNav(cycle: CycleRecord | null): NavEntry[] {
     {
       href: '/draft-review',
       label: 'Draft SROP Review',
-      phase: 6,
+      phase: 5,
       block: noCycle ?? (draft?.status === 'issued' || draft?.status === 'finalized' ? null : 'Issue a draft first'),
       badge: queue > 0 ? { count: queue, tone: 'warn' } : pendingReviews > 0 ? { count: pendingReviews, tone: 'info' } : null,
-      done: Boolean(cycle?.finalisedAt),
-    },
-    {
-      href: '/history',
-      label: 'History',
-      phase: 7,
-      block: noCycle,
       done: Boolean(cycle?.finalisedAt),
     },
   ].map((e) => ({ ...e, phase: e.phase })) as NavEntry[];

@@ -1,11 +1,20 @@
 'use client';
 
-import CycleHome from './screens/CycleHome';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
 import MyTasks from './screens/MyTasks';
 import { useCycle } from './providers';
 
-/** The landing screen depends on who you are: the status board, or your task list. */
+/** Planners land on Requests; stakeholders keep the task list at /. */
 export default function Home() {
   const { isPlanner } = useCycle();
-  return isPlanner ? <CycleHome /> : <MyTasks />;
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isPlanner) router.replace('/requests');
+  }, [isPlanner, router]);
+
+  if (isPlanner) return null;
+  return <MyTasks />;
 }

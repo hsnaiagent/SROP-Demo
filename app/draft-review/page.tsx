@@ -46,7 +46,7 @@ export default function DraftReviewPage() {
   if (!cycle) {
     return (
       <Screen title="Draft SROP Review">
-        <EmptyState title="No cycle open">Start a cycle on Cycle Home first.</EmptyState>
+        <EmptyState title="No cycle open">Start a new cycle from Requests.</EmptyState>
       </Screen>
     );
   }
@@ -72,6 +72,9 @@ export default function DraftReviewPage() {
   ).length;
 
   const anyOutstanding = reviews.some((r) => ['notified', 'viewed'].includes(r.status));
+  const pendingApproval = reviews.filter((r) =>
+    ['notified', 'viewed', 'escalated'].includes(r.status)
+  );
 
   return (
     <Screen
@@ -79,6 +82,18 @@ export default function DraftReviewPage() {
       lede={`Draft v${draft.version}, issued ${draft.issuedAt ? relTime(draft.issuedAt) : ''}. Nothing a stakeholder proposes is applied until you accept it.`}
       actions={
         <>
+          {pendingApproval.length > 0 && (
+            <Button
+              tone="primary"
+              disabled={busy !== null}
+              title="Demo shortcut: record every waiting stakeholder as having approved the draft"
+              onClick={() => act('simulate_review_approve_all')}
+            >
+              {busy === 'simulate_review_approve_all'
+                ? 'Approving…'
+                : `Simulate all approvals (${pendingApproval.length})`}
+            </Button>
+          )}
           {anyOutstanding && (
             <Button disabled={busy !== null} onClick={() => act('simulate_responses')}>
               Simulate stakeholder responses
@@ -98,11 +113,7 @@ export default function DraftReviewPage() {
       {cycle.finalisedAt && (
         <Banner tone="good" title="Final SROP published">
           Published {relTime(cycle.finalisedAt)} from draft v{draft.version} at{' '}
-          {fmtMoney(draft.totalRevenue)}. Everything is archived on the{' '}
-          <Link href="/history" className="underline">
-            History
-          </Link>{' '}
-          screen.
+          {fmtMoney(draft.totalRevenue)}.
         </Banner>
       )}
 
@@ -319,15 +330,28 @@ export default function DraftReviewPage() {
 
                   {review.note && <p className="text-xs italic text-zinc-400">{review.note}</p>}
 
-                  {['notified', 'viewed'].includes(review.status) && (
-                    <Button
-                      size="sm"
-                      tone="quiet"
-                      disabled={busy !== null}
-                      onClick={() => act('advance_clock', { days: 1 })}
-                    >
-                      Advance a day
-                    </Button>
+                  {['notified', 'viewed', 'escalated'].includes(review.status) && (
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        tone="primary"
+                        disabled={busy !== null}
+                        title="Demo shortcut: record this stakeholder as having approved the draft"
+                        onClick={() => act('simulate_review_approve', { id: review.id })}
+                      >
+                        Simulate approval
+                      </Button>
+                      {['notified', 'viewed'].includes(review.status) && (
+                        <Button
+                          size="sm"
+                          tone="quiet"
+                          disabled={busy !== null}
+                          onClick={() => act('advance_clock', { days: 1 })}
+                        >
+                          Advance a day
+                        </Button>
+                      )}
+                    </div>
                   )}
 
                   {review.status === 'escalated' && (

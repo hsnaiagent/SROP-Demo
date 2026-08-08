@@ -114,23 +114,9 @@ test('buildPlan does not mutate its input', () => {
   assert.equal(JSON.stringify(input), before);
 });
 
-test('LPG-95 is excluded with the volume at stake, not silently dropped', () => {
-  const { rows, excluded } = buildPlan(loadInput());
-
-  assert.equal(excluded.length, 1, 'exactly one unplannable series');
-  const [lpg] = excluded;
-  assert.equal(lpg.key, 'JAZAN|BP-JAZAN|LPG-95');
-  assert.equal(lpg.product, 'LPG-95');
-  assert.equal(lpg.bulkPlant, 'BP-JAZAN');
-  assert.deepEqual(lpg.months, ['2026-11']);
-  assert.equal(lpg.demandKb, 6.4, 'the excluded row must state the volume not planned');
-  assert.equal(lpg.reason, 'no reference limits');
-
-  assert.equal(
-    rows.some((r) => r.product === 'LPG-95'),
-    false,
-    'an unplannable series must not appear in the plan rows'
-  );
+test('every series in demand has reference limits', () => {
+  const { excluded } = buildPlan(loadInput());
+  assert.equal(excluded.length, 0, 'no unplannable series in the trimmed dataset');
 });
 
 test('every plan row can be checked against its own limits', () => {
@@ -229,12 +215,12 @@ test('the October swing is -15.4 kb and the plan moves by -$1.45M', () => {
   assert.equal(differing.length, 1, 'exactly one plan row may move');
 });
 
-test('ASPHALT plans at zero revenue because it has no price', () => {
+test('ASPHALT plans with the submitted monthly price', () => {
   const { rows } = buildPlan(loadInput());
   const asphalt = rows.filter((r) => r.product === 'ASPHALT');
   assert.ok(asphalt.length > 0, 'ASPHALT is planned — it has limits');
   assert.ok(
-    asphalt.every((r) => r.price === 0 && r.revenue === 0),
-    'a product with no price contributes no revenue, which is what the cross-source rule catches'
+    asphalt.every((r) => r.price > 0 && r.revenue > 0),
+    'ASPHALT now carries a monthly price in the trimmed dataset'
   );
 });
