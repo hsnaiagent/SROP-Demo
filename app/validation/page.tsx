@@ -363,7 +363,7 @@ function FlagCard({
                 type="checkbox"
                 checked={selected}
                 onChange={(e) => onSelect(e.target.checked)}
-                className="size-3.5 accent-blue-accent"
+                className="size-3.5 accent-blue-accent dark:accent-green-accent"
                 aria-label="select flag"
               />
             )}

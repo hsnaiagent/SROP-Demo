@@ -1,14 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #ffffff;
+  /* Brand palette (canonical) */
+  --color-primary: #ffffff;
+  --color-secondary-green: #00a651;
+  --color-secondary-blue: #003f8a;
+
+  /* Semantic aliases */
+  --bg: var(--color-primary);
+  --green: var(--color-secondary-green);
+  --blue: var(--color-secondary-blue);
+
+  /* Derived neutrals — light mode */
   --surface: #f3f6f8;
   --surface-2: #e8ecef;
   --border: #dce2e6;
   --text: #10131a;
   --text-muted: #5b6670;
-  --green: #00a651;
-  --blue: #003f8a;
   --warn: #c2410c;
   --bad: #dc2626;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.08);
@@ -16,20 +24,27 @@
 }
 
 .dark {
-  --bg: #0f1f35;
+  --color-primary: #0f1f35;
+  --bg: var(--color-primary);
+  /* Secondary colors stay the same in both modes */
+  --green: #00a651;
+  --blue: #003f8a;
+
+  /* Derived neutrals — navy steps */
   --surface: #16283f;
   --surface-2: #1c3350;
   --border: #26405f;
   --text: #eaf0f6;
   --text-muted: #8fa3b8;
-  --green: #00a651;
-  --blue: #2e7fd6;
   --warn: #f59e0b;
   --bad: #f87171;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 @theme inline {
+  --color-primary: var(--color-primary);
+  --color-secondary-green: var(--color-secondary-green);
+  --color-secondary-blue: var(--color-secondary-blue);
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);

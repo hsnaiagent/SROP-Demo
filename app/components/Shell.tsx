@@ -130,7 +130,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 href={entry.href}
                 className={`${base} ${
                   active
-                    ? 'border-l-2 border-l-blue-accent bg-surface-2 text-text'
+                    ? 'border-l-2 border-l-blue-accent bg-surface-2 text-text dark:border-l-green-accent'
                     : 'text-text-muted hover:bg-surface hover:text-text'
                 }`}
               >
@@ -174,7 +174,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm font-medium text-text outline-none focus:border-blue-accent"
+                className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm font-medium text-text outline-none focus:border-blue-accent dark:focus:border-green-accent"
               >
                 {identities.map((name) => (
                   <option key={name} value={name}>
@@ -195,7 +195,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               </div>
             )}
             {message && !error && (
-              <div className="rounded-lg border border-blue-accent/40 bg-blue-accent/10 px-4 py-2.5 text-sm text-text">
+              <div className="rounded-lg border border-blue-accent/40 bg-blue-accent/10 px-4 py-2.5 text-sm text-text dark:border-green-accent/40 dark:bg-green-accent/10">
                 {message}
               </div>
             )}

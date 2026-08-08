@@ -106,7 +106,7 @@ export default function PlanPage() {
               <a
                 href="/api/master"
                 download={`SROP_master_${cycle.id}.csv`}
-                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text hover:border-blue-accent/50"
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text hover:border-blue-accent/50 dark:hover:border-green-accent/50"
               >
                 Download
               </a>

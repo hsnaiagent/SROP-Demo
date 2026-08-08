@@ -27,7 +27,7 @@ export const PLANNER = 'Y - SROP Planner';
 
 type Theme = 'light' | 'dark';
 
-const themeStore = createLocalStore<Theme>('srop.theme', 'dark');
+const themeStore = createLocalStore<Theme>('srop.theme', 'light');
 
 /** Who you are viewing as. External state, so it is read through the store. */
 const roleStore = createLocalStore<string>('srop.role', PLANNER);

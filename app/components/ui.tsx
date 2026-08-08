@@ -60,7 +60,7 @@ export function Card({
     good: 'border-green-accent/40 bg-green-accent/[0.06]',
     warn: 'border-warn/40 bg-warn/[0.06]',
     bad: 'border-bad/40 bg-bad/[0.06]',
-    accent: 'border-blue-accent/40 bg-surface-2',
+    accent: 'border-blue-accent/40 bg-surface-2 dark:border-green-accent/40',
   };
   return (
     <section className={`${cardBase} ${tones[tone]} ${className}`}>
@@ -133,7 +133,7 @@ export function Button({
       'bg-blue-accent text-white hover:brightness-110 disabled:bg-surface-2 disabled:text-text-muted',
     good: 'bg-green-accent text-white hover:brightness-110 disabled:bg-surface-2 disabled:text-text-muted',
     ghost:
-      'border border-border text-text hover:border-blue-accent/60 hover:bg-surface-2 disabled:border-border disabled:text-text-muted',
+      'border border-border text-text hover:border-blue-accent/60 hover:bg-surface-2 dark:hover:border-green-accent/60 disabled:border-border disabled:text-text-muted',
     quiet: 'text-text-muted hover:text-text disabled:text-text-muted/50',
     danger:
       'border border-bad/50 text-bad hover:border-bad hover:bg-bad/10 disabled:border-border disabled:text-text-muted',
@@ -171,7 +171,7 @@ export function Field({
 }
 
 const inputBase =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors placeholder:text-text-muted/60 focus:border-blue-accent';
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors placeholder:text-text-muted/60 focus:border-blue-accent dark:focus:border-green-accent';
 
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputBase} ${props.className ?? ''}`} />;
@@ -196,7 +196,7 @@ export function Select({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text outline-none focus:border-blue-accent ${className}`}
+      className={`rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text outline-none focus:border-blue-accent dark:focus:border-green-accent ${className}`}
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
@@ -237,7 +237,7 @@ export function Tabs<T extends string>({
               <span className="font-mono text-[11px] text-text-muted">{t.description}</span>
             )}
             {active && (
-              <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-blue-accent" />
+              <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-blue-accent dark:bg-green-accent" />
             )}
           </button>
         );
@@ -263,8 +263,8 @@ export function Chip({
       onClick={onClick}
       className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
         active
-          ? 'border-blue-accent bg-blue-accent/15 text-blue-accent'
-          : 'border-border text-text-muted hover:border-blue-accent/40 hover:text-text'
+          ? 'border-blue-accent bg-blue-accent/15 text-blue-accent dark:border-green-accent dark:bg-green-accent/15 dark:text-green-accent'
+          : 'border-border text-text-muted hover:border-blue-accent/40 hover:text-text dark:hover:border-green-accent/40'
       } ${className}`}
     >
       {children}
@@ -307,7 +307,7 @@ export function GradientPlaceholder({ className = '' }: { className?: string }) 
     <div
       className={`rounded-lg ${className}`}
       style={{
-        background: 'linear-gradient(135deg, var(--green) 0%, var(--blue) 50%, #0f1f35 100%)',
+        background: 'linear-gradient(135deg, var(--green) 0%, var(--blue) 50%, var(--bg) 100%)',
       }}
     />
   );
@@ -356,7 +356,7 @@ export function Badge({
     good: 'bg-green-accent/15 text-green-accent',
     warn: 'bg-warn/15 text-warn',
     bad: 'bg-bad/15 text-bad',
-    info: 'bg-blue-accent/15 text-blue-accent',
+    info: 'bg-blue-accent/15 text-blue-accent dark:bg-green-accent/15 dark:text-green-accent',
     accent: 'bg-blue-accent text-white',
   };
   return (
@@ -373,7 +373,7 @@ export function Badge({
 export function Spinner({ className = '' }: { className?: string }) {
   return (
     <span
-      className={`inline-block size-3.5 animate-spin rounded-full border-2 border-border border-t-blue-accent ${className}`}
+      className={`inline-block size-3.5 animate-spin rounded-full border-2 border-border border-t-blue-accent dark:border-t-green-accent ${className}`}
     />
   );
 }
@@ -400,7 +400,7 @@ export function Banner({
   actions?: ReactNode;
 }) {
   const tones = {
-    info: 'border-blue-accent/40 bg-blue-accent/[0.06] text-text',
+    info: 'border-blue-accent/40 bg-blue-accent/[0.06] text-text dark:border-green-accent/40 dark:bg-green-accent/[0.06]',
     good: 'border-green-accent/40 bg-green-accent/[0.06] text-text',
     warn: 'border-warn/40 bg-warn/[0.06] text-text',
     bad: 'border-bad/40 bg-bad/[0.06] text-text',
@@ -438,7 +438,7 @@ export function Stat({
     warn: 'text-warn',
     bad: 'text-bad',
   };
-  const interactive = onClick ? 'cursor-pointer hover:border-blue-accent/40' : '';
+  const interactive = onClick ? 'cursor-pointer hover:border-blue-accent/40 dark:hover:border-green-accent/40' : '';
   return (
     <div
       onClick={onClick}
@@ -500,7 +500,7 @@ export function Row({
     critical: 'border-l-2 border-l-bad bg-bad/[0.04]',
     warning: 'border-l-2 border-l-warn bg-warn/[0.03]',
     ok: 'border-l-2 border-l-transparent',
-    changed: 'border-l-2 border-l-blue-accent bg-blue-accent/[0.04]',
+    changed: 'border-l-2 border-l-blue-accent bg-blue-accent/[0.04] dark:border-l-green-accent dark:bg-green-accent/[0.04]',
   };
   return (
     <tr

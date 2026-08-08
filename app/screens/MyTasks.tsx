@@ -114,7 +114,7 @@ export default function MyTasks() {
             <p className="text-sm italic text-text-muted">&ldquo;{flag.plainEnglish}&rdquo;</p>
             <p className="text-sm text-text-muted">
               Confirm the figure is intentional, or reply with the corrected value. You can also
-              re-upload the file on <Link href="/submit" className="text-blue-accent underline">Submit Data</Link>.
+              re-upload the file on <Link href="/submit" className="text-blue-accent underline dark:text-green-accent">Submit Data</Link>.
             </p>
             <Textarea
               rows={2}

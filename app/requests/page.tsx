@@ -319,7 +319,7 @@ export default function RequestsPage() {
                   key={msg.id}
                   className={`rounded-lg px-3.5 py-2.5 text-sm leading-relaxed ${
                     msg.role === 'planner'
-                      ? 'ml-8 bg-blue-accent/10 text-text'
+                      ? 'ml-8 bg-blue-accent/10 text-text dark:bg-green-accent/10'
                       : 'mr-4 border border-border bg-surface text-text'
                   }`}
                 >
@@ -354,7 +354,7 @@ export default function RequestsPage() {
                       key={s}
                       type="button"
                       onClick={() => setText(s)}
-                      className="rounded-full border border-border px-2.5 py-1 text-xs text-text-muted hover:border-blue-accent/50 hover:text-text"
+                      className="rounded-full border border-border px-2.5 py-1 text-xs text-text-muted hover:border-blue-accent/50 hover:text-text dark:hover:border-green-accent/50"
                     >
                       {s}
                     </button>
@@ -395,7 +395,7 @@ export default function RequestsPage() {
                         type="checkbox"
                         checked={req.reviewed}
                         onChange={(e) => act('update_request', { id: req.id, reviewed: e.target.checked })}
-                        className="size-3.5 accent-blue-accent"
+                        className="size-3.5 accent-blue-accent dark:accent-green-accent"
                       />
                       reviewed
                     </label>

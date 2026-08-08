@@ -85,7 +85,7 @@ export default function SubmitPage() {
         <div className="flex flex-col gap-4">
           <div
             onClick={() => input.current?.click()}
-            className="cursor-pointer rounded-xl border border-dashed border-border px-6 py-8 text-center transition-colors hover:border-blue-accent/50"
+            className="cursor-pointer rounded-xl border border-dashed border-border px-6 py-8 text-center transition-colors hover:border-blue-accent/50 dark:hover:border-green-accent/50"
           >
             <input
               ref={input}

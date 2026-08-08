@@ -343,7 +343,7 @@ export default function ReviewPage() {
                   <div
                     key={i}
                     className={`rounded-lg px-3 py-2 text-sm ${
-                      m.role === 'me' ? 'ml-8 bg-blue-accent/10 text-text' : 'mr-4 bg-surface-2 text-text'
+                      m.role === 'me' ? 'ml-8 bg-blue-accent/10 text-text dark:bg-green-accent/10' : 'mr-4 bg-surface-2 text-text'
                     }`}
                   >
                     {m.text}
